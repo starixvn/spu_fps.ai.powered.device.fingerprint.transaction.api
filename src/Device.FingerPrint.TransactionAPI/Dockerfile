@@ -2,17 +2,15 @@ FROM hub.nexdev.net/base/dotnet/core/sdk:9.0-alpine AS builder
 
 WORKDIR /src
 
-# Copy project file first for better layer caching
-COPY ["./src/FPS.AI.Powered.Device.Fingerprint.Transaction.API/Device.FingerPrint.TransactionAPI.csproj", "FPS.AI.Powered.Device.Fingerprint.Transaction.API/"]
+COPY ["./src/Device.FingerPrint.TransactionAPI/Device.FingerPrint.TransactionAPI.csproj", "Device.FingerPrint.TransactionAPI/"]
 
-WORKDIR "/src/FPS.AI.Powered.Device.Fingerprint.Transaction.API"
+WORKDIR "/src/Device.FingerPrint.TransactionAPI"
 
 RUN dotnet nuget add source http://nuget.nexdev.net/api/v2
 
 RUN dotnet restore -v n
 
-# Copy the rest of the source code
-COPY . .
+COPY ./src/Device.FingerPrint.TransactionAPI .
 
 RUN dotnet publish -r linux-x64 --self-contained false -c Release -o /app
 

@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36408.4
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Device.FingerPrint.TransactionAPI", "src\FPS.AI.Powered.Device.Fingerprint.Transaction.API\Device.FingerPrint.TransactionAPI\Device.FingerPrint.TransactionAPI.csproj", "{CD008B6D-F2A9-4BC3-8133-D949AFD40360}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Device.FingerPrint.TransactionAPI", "src\Device.FingerPrint.TransactionAPI\Device.FingerPrint.TransactionAPI.csproj", "{CD008B6D-F2A9-4BC3-8133-D949AFD40360}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Device.FingerPrint.TransactionAPI.Tests", "src\FPS.AI.Powered.Device.Fingerprint.Transaction.API\Device.FingerPrint.TransactionAPI.Tests\Device.FingerPrint.TransactionAPI.Tests.csproj", "{59951DFC-A339-4880-A596-A3A9FF84A13E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Device.FingerPrint.TransactionAPI.Tests", "src\Device.FingerPrint.TransactionAPI.Tests\Device.FingerPrint.TransactionAPI.Tests.csproj", "{59951DFC-A339-4880-A596-A3A9FF84A13E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
