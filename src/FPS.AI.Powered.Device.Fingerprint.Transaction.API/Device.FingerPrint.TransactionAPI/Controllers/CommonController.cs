@@ -8,19 +8,30 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
     public class CommonController(IAppSettings appSettings) : ControllerBase
     {
         private readonly IAppSettings appSettings = appSettings;
+        private static readonly string CachedServerName = Environment.MachineName;
 
         [HttpGet("whoami")]
         public WhoamiModel Index()
         {
-            var httpConnectionFeature = HttpContext.Features.Get<IHttpConnectionFeature>();
-            var localIpAddress = httpConnectionFeature?.LocalIpAddress;
+            string? localIpString = null;
+            try
+            {
+                var httpConnectionFeature = HttpContext?.Features?.Get<IHttpConnectionFeature>();
+                var localIpAddress = httpConnectionFeature?.LocalIpAddress;
+                localIpString = localIpAddress?.ToString();
+            }
+            catch
+            {
+                // If getting the HTTP connection feature or local IP address fails, leave it as null
+                localIpString = null;
+            }
 
             return new WhoamiModel
             {
                 Environment = appSettings.Environment,
-                ServerName = Environment.MachineName,
+                ServerName = CachedServerName,
                 ServerTime = DateTime.Now,
-                LocalIP = localIpAddress?.ToString()
+                LocalIP = localIpString
             };
         }
     }
