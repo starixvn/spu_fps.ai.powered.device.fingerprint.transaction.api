@@ -6,7 +6,7 @@ COPY ["./src/Device.FingerPrint.TransactionAPI/Device.FingerPrint.TransactionAPI
 
 WORKDIR "/src/Device.FingerPrint.TransactionAPI"
 
-RUN dotnet nuget add source http://nuget.nexdev.net/api/v2
+RUN dotnet nuget add source https://nuget.nexdev.net/api/v2
 
 RUN dotnet restore -v n
 
