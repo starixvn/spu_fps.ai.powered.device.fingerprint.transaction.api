@@ -1,6 +1,6 @@
 ﻿namespace Device.FingerPrint.TransactionAPI.Model
 {
-    public class TransactionResult
+    public static class TransactionResult
     {
         public const string Success = "000";
 

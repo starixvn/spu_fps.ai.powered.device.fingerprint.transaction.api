@@ -8,7 +8,7 @@
 
         public string? LocalIP { get; set; }
 
-        public DateTime ServerTime { get; set; }
+        public DateTimeOffset ServerTime { get; set; }
 
         public string? RealIP { get; set; }
 

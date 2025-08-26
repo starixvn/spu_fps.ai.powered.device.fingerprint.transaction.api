@@ -19,7 +19,8 @@ namespace Device.FingerPrint.TransactionAPI.JWT
 
         public async Task Invoke(HttpContext context)
         {
-            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(' ').Last();
+            var authHeaderParts = context.Request.Headers.Authorization.FirstOrDefault()?.Split(' ');
+            var token = authHeaderParts?[^1];
 
             if (JWTEnable && (token == null || !ValidateToken(token)))
             {
@@ -52,7 +53,7 @@ namespace Device.FingerPrint.TransactionAPI.JWT
                     ValidateAudience = false,
                     ValidateLifetime = false,
                     RequireExpirationTime = false,
-                }, out SecurityToken validatedToken);
+                }, out _);
             }
             catch
             {

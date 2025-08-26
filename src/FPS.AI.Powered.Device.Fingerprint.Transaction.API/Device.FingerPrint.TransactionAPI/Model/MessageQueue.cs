@@ -23,7 +23,7 @@
 
         public DateTime TransDate { get; set; }
 
-        public DateTime SubscriberDate { get; set; }
+        public DateTimeOffset SubscriberDate { get; set; }
 
         public string? Token { get; set; }
 

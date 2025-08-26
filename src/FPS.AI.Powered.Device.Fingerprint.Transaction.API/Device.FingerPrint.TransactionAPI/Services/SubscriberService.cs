@@ -91,25 +91,14 @@ namespace Device.FingerPrint.TransactionAPI.Services
         {
             try
             {
-                using var httpClient = new HttpClient();
-                httpClient.Timeout = TimeSpan.FromMinutes(1);
-                var url = $"{appSettings.GetSubscriberInfo}?subscriberName={subName}";
+                using var httpClient = new HttpClient
+                {
+                    Timeout = TimeSpan.FromMinutes(1)
+                };
 
-                var result = await httpClient.GetAsync(url)
-                    .ContinueWith((responseTask) =>
-                    {
-                        var response = responseTask.Result;
-                        var jsonString = response.Content.ReadAsStringAsync();
-
-                        var options = new JsonSerializerOptions
-                        {
-                            PropertyNameCaseInsensitive = true
-                        };
-
-                        return JsonSerializer.Deserialize<SubscriberModel>(jsonString.Result, options);
-                    });
-
-                return result ?? new SubscriberModel();
+                var url = $"{appSettings.GetSubscriberInfo}?subscriberName={Uri.EscapeDataString(subName)}";
+                return await httpClient.GetFromJsonAsync<SubscriberModel>(url)
+                       ?? new SubscriberModel();
             }
             catch
             {

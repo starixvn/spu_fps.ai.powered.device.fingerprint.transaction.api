@@ -69,7 +69,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 Subscriber = transactionRequest.Subscriber,
                 IP = transactionRequest.IP,
                 TransDate = transactionRequest.TransDate,
-                SubscriberDate = DateTime.Now,
+                SubscriberDate = DateTimeOffset.Now,
                 Mobile = new MobileModel
                 {
                     MachineCode = !string.IsNullOrEmpty(transactionRequest.AndroidCode) ? transactionRequest.AndroidCode : transactionRequest.MachineCode,

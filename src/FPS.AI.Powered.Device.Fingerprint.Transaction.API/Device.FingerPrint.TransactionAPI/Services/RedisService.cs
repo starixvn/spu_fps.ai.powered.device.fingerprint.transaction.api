@@ -76,8 +76,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
                     throw;
                 }
             }
-
-            throw new InvalidOperationException($"Redis operation {operationName} failed after {MAX_RETRY_ATTEMPTS} attempts");
+            throw new InvalidOperationException($"Redis {nameof(operationName)} {operationName} failed after {MAX_RETRY_ATTEMPTS} attempts");
         }
 
         public Task<bool> HashSetAsync<T>(string hashKey, string key, T value, bool isForceUpdate)

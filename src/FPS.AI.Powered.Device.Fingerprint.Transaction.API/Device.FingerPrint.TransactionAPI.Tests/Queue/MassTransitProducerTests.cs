@@ -187,29 +187,52 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Queue
         #region Send (Fire and Forget) Tests
 
         [Fact]
-        public void Send_WithValidData_ShouldInitiateAsyncOperation()
+        public async Task Send_WithValidData_ShouldInitiateAsyncOperation()
         {
             // Arrange
             var testData = new { Message = "Fire and forget test" };
-            var taskCompletionSource = new TaskCompletionSource<ISendEndpoint>();
-            taskCompletionSource.SetResult(_mockSendEndpoint.Object);
 
-            _mockBus.Setup(x => x.GetSendEndpoint(It.IsAny<Uri>()))
-                .Returns(taskCompletionSource.Task);
+            // TaskCompletionSource for GetSendEndpoint -> will return the mock endpoint
+            var endpointTcs = new TaskCompletionSource<ISendEndpoint>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
 
-            _mockSendEndpoint.Setup(x => x.Send(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            _mockBus
+                .Setup(x => x.GetSendEndpoint(It.IsAny<Uri>()))
+                .Returns(endpointTcs.Task);
+
+            // Complete the endpoint Task immediately with the mock
+            endpointTcs.SetResult(_mockSendEndpoint.Object);
+
+            // TaskCompletionSource to signal when Send(...) is invoked
+            var sendCalledTcs = new TaskCompletionSource<object?>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            _mockSendEndpoint
+                .Setup(x => x.Send(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+                .Callback<object, CancellationToken>((payload, ct) =>
+                {
+                    // Signal: Send was called
+                    sendCalledTcs.TrySetResult(payload);
+                })
                 .Returns(Task.CompletedTask);
 
             // Act
-            _massTransitProducer.Send(testData, _testAddress);
+            _massTransitProducer.Send(testData, _testAddress); // fire-and-forget
 
-            // Wait a moment for the continuation to execute
-            Thread.Sleep(100);
+            // Wait for the Send call, with a timeout to avoid hanging tests
+            var completed = await Task.WhenAny(
+                sendCalledTcs.Task,
+                Task.Delay(TimeSpan.FromSeconds(2))
+            );
+            Assert.True(completed == sendCalledTcs.Task, "Send was not invoked within timeout");
 
             // Assert
             _mockBus.Verify(x => x.GetSendEndpoint(new Uri(_testAddress)), Times.Once);
-            // Note: We can't easily verify the Send call because it's in a continuation
+            _mockSendEndpoint.Verify(
+                x => x.Send(It.IsAny<object>(), It.IsAny<CancellationToken>()),
+                Times.Once);
         }
+
 
         [Fact]
         public void Send_WhenEndpointResolutionFails_ShouldNotThrowSynchronously()

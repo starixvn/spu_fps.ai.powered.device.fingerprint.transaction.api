@@ -30,7 +30,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             {
                 Environment = appSettings.Environment,
                 ServerName = CachedServerName,
-                ServerTime = DateTime.Now,
+                ServerTime = DateTimeOffset.Now,
                 LocalIP = localIpString
             };
         }

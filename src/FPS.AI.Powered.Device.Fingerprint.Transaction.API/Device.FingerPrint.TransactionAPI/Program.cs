@@ -55,7 +55,7 @@ builder.Services.AddSwaggerGen(c =>
         Title = "Transaction API",
         Version = "v1",
         Description = "This is transaction API",
-        Contact = new OpenApiContact()
+        Contact = new OpenApiContact
         {
             Name = "API Support",
             Email = "support@fps.ai"
@@ -104,10 +104,6 @@ app.UseMiddleware<ExceptionMiddleware>();
 app.UseMiddleware<CustomJWTMiddleware>(appSettings.JWTEnable, appSettings.JWTPassword);
 app.UseCors("corsapp");
 app.MapControllers();
-
-//var gatewaySetting = app.ApplicationServices.GetRequiredService<IGatewaySetting>();
-
-//MetricHttpService.PublicDataToGateway(gatewaySetting.GatewayInfo);
 
 // Health check endpoint
 app.UseHealthChecks("/healthz", new HealthCheckOptions
