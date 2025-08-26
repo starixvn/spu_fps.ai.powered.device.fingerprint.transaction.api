@@ -7,7 +7,6 @@ using Fanex.Logging;
 using Fanex.Logging.Sentry;
 using MassTransit;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Configuration;
 using Microsoft.OpenApi.Models;
 using ONEbook.UM.AspNetCore;
 using ONEbook.UM.Configurations;
@@ -111,8 +110,8 @@ app.UseHealthChecks("/healthz", new HealthCheckOptions
     Predicate = _ => true
 });
 
-if (app.Environment.IsDevelopment() || 
-    app.Configuration.GetValue("Environment", "LOCAL") == "LOCAL" || 
+if (app.Environment.IsDevelopment() ||
+    app.Configuration.GetValue("Environment", "LOCAL") == "LOCAL" ||
     app.Configuration.GetValue("Environment", "UAT") == "UAT")
 {
     app.UseSwagger();

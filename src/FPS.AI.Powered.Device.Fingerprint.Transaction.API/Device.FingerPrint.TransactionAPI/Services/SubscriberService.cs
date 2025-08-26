@@ -1,6 +1,9 @@
 ﻿using Device.FingerPrint.TransactionAPI.Model;
 using Fanex.Logging;
-using System.Text.Json;
+using Newtonsoft.Json;
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Device.FingerPrint.TransactionAPI.Services
 {
@@ -9,16 +12,12 @@ namespace Device.FingerPrint.TransactionAPI.Services
         Task<string> ValidateAsync(TransactionRequest transactionRequest);
     }
 
-    public class SubscriberService : ISubscriberService
+    public class SubscriberService(IAppSettings appSettings, IRedisService redisService, HttpClient httpClient, Fanex.Logging.ILogger logger) : ISubscriberService
     {
-        private readonly IAppSettings appSettings;
-        private readonly IRedisService redisService;
-
-        public SubscriberService(IAppSettings appSettings, IRedisService redisService)
-        {
-            this.appSettings = appSettings;
-            this.redisService = redisService;
-        }
+        private readonly IAppSettings _appSettings = appSettings;
+        private readonly IRedisService _redisService = redisService;
+        private readonly HttpClient _httpClient = httpClient;
+        private readonly Fanex.Logging.ILogger _logger = logger;
 
         public async Task<string> ValidateAsync(TransactionRequest transactionRequest)
         {
@@ -27,83 +26,69 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 return TransactionResult.EmptyAccount;
             }
 
-            if (!string.IsNullOrWhiteSpace(transactionRequest.Subscriber))
+            if (string.IsNullOrWhiteSpace(transactionRequest.Subscriber))
             {
-                var subscriber = await GetSubscriberInfoAsync(transactionRequest.Subscriber);
-
-                if (subscriber != null && subscriber.SubscriberId != 0)
-                {
-                    transactionRequest.SubscriberId = subscriber.SubscriberId;
-
-                    return TransactionResult.Success;
-                }
+                return TransactionResult.NotExistSubscriber;
             }
 
-            return TransactionResult.NotExistSubscriber;
+            var subscriber = await GetSubscriberInfoAsync(transactionRequest.Subscriber);
+
+            if (subscriber == null || subscriber.SubscriberId == 0)
+            {
+                return TransactionResult.NotExistSubscriber;
+            }
+
+            transactionRequest.SubscriberId = subscriber.SubscriberId;
+            return TransactionResult.Success;
         }
 
         private async Task<SubscriberModel> GetSubscriberInfoAsync(string subName)
         {
-
-            if (!string.IsNullOrWhiteSpace(subName))
+            var cacheKey = $"TransAPI:{subName}";
+            try
             {
-                var cacheKey = $"TransAPI:{subName}";
-
-                SubscriberModel subInfo = await GetSubscriberInfoByCache(cacheKey, subName);
-
-                if (subInfo != null && subInfo.SubscriberId != 0)
-                {
-                    return subInfo;
-                }
-
-                return await GetDataSubscriberAndSetCacheAsync(subName, cacheKey);
-
+                return await GetSubscriberInfoByCache(cacheKey, subName);
             }
-
-            return new SubscriberModel();
+            catch (Exception ex)
+            {
+                _logger.Error($"Get sub info from cache has ex: {ex.Message}", ex);
+                return await GetDataSubscriberAsync(subName);
+            }
         }
 
         private async Task<SubscriberModel> GetSubscriberInfoByCache(string cacheKey, string subName)
         {
-            try
+            var subscriber = await _redisService.GetAsync<SubscriberModel>(cacheKey);
+            if (subscriber != null)
             {
-                return await redisService.GetAsync<SubscriberModel>(cacheKey);
+                return subscriber;
             }
-            catch (Exception)
-            {
-                return await GetDataSubscriberAndSetCacheAsync(subName, cacheKey);
-            }
+
+            return await GetDataSubscriberAndSetCacheAsync(subName, cacheKey);
         }
 
         private async Task<SubscriberModel> GetDataSubscriberAndSetCacheAsync(string subName, string cacheKey)
         {
-            var subData = await GetDataSubscriberAsync(subName);
-
-            if (subData != null && subData.SubscriberId != 0)
+            var subscriber = await GetDataSubscriberAsync(subName);
+            if (subscriber != null)
             {
-                _ = redisService.AddAsyncAndExpiryAsync(cacheKey, subData, DateTimeOffset.UtcNow.AddMinutes(120));
+                await _redisService.AddAsyncAndExpiryAsync(cacheKey, subscriber, DateTimeOffset.Now.AddHours(1));
             }
-
-            return subData;
+            return subscriber;
         }
 
         private async Task<SubscriberModel> GetDataSubscriberAsync(string subName)
         {
             try
             {
-                using var httpClient = new HttpClient
-                {
-                    Timeout = TimeSpan.FromMinutes(1)
-                };
-
-                var url = $"{appSettings.GetSubscriberInfo}?subscriberName={Uri.EscapeDataString(subName)}";
-                return await httpClient.GetFromJsonAsync<SubscriberModel>(url)
-                       ?? new SubscriberModel();
+                var url = $"{_appSettings.GetSubscriberInfo}?subName={subName}";
+                var response = await _httpClient.GetStringAsync(url);
+                return JsonConvert.DeserializeObject<SubscriberModel>(response);
             }
-            catch
+            catch (Exception ex)
             {
-                LogService.Error($"Cannot getSubscriber {subName} from {appSettings.GetSubscriberInfo}");
-                return new SubscriberModel();
+                _logger.Error($"Get subscriber info from API has ex: {ex.Message}", ex);
+                return null;
             }
         }
     }

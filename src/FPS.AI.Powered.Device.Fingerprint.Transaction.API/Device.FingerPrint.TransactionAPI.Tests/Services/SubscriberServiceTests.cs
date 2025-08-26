@@ -5,6 +5,13 @@ using Moq;
 using Xunit;
 using Fanex.Logging;
 using System.Diagnostics;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Moq.Protected;
+using System.Threading;
+using System.Net;
+using System;
+using System.Collections.Generic;
 
 namespace Device.FingerPrint.TransactionAPI.Tests.Services
 {
@@ -15,6 +22,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
     {
         private readonly Mock<IAppSettings> _mockAppSettings;
         private readonly Mock<IRedisService> _mockRedisService;
+        private readonly Mock<HttpMessageHandler> _mockHttpMessageHandler;
         private readonly SubscriberService _subscriberService;
 
         static SubscriberServiceTests()
@@ -28,11 +36,29 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
         {
             _mockAppSettings = new Mock<IAppSettings>();
             _mockRedisService = new Mock<IRedisService>();
-            
-            _subscriberService = new SubscriberService(_mockAppSettings.Object, _mockRedisService.Object);
+            _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+
+            var httpClient = new HttpClient(_mockHttpMessageHandler.Object);
+            var mockLogger = new Mock<ILogger>();
+            _subscriberService = new SubscriberService(_mockAppSettings.Object, _mockRedisService.Object, httpClient, mockLogger.Object);
 
             // Setup default app settings
             _mockAppSettings.Setup(x => x.GetSubscriberInfo).Returns("https://api.example.com/subscriber");
+        }
+
+        private void MockHttpCall(HttpStatusCode statusCode, string responseContent)
+        {
+            _mockHttpMessageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                )
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = statusCode,
+                    Content = new StringContent(responseContent),
+                });
         }
 
         #region ValidateAsync Tests
@@ -158,7 +184,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
         #region Caching Tests
 
         [Fact]
-        public async Task ValidateAsync_WithCacheHit_ShouldReturnSuccessAndNotCallRedisAgain()
+        public async Task ValidateAsync_WithCacheHit_ShouldReturnSuccessAndNotCallApi()
         {
             // Arrange
             var subscriberName = "cachedSubscriber";
@@ -186,12 +212,16 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             result.Should().Be(TransactionResult.Success);
             transactionRequest.SubscriberId.Should().Be(456);
             
-            // Verify Redis GetAsync was called exactly once
             _mockRedisService.Verify(x => x.GetAsync<SubscriberModel>(cacheKey), Times.Once);
+            _mockHttpMessageHandler.Protected().Verify(
+                "SendAsync",
+                Times.Never(),
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>());
         }
 
         [Fact]
-        public async Task ValidateAsync_WithRedisException_ShouldHandleGracefully()
+        public async Task ValidateAsync_WithRedisException_ShouldFallbackToApiAndSucceed()
         {
             // Arrange
             var subscriberName = "subscriberWithRedisError";
@@ -203,21 +233,17 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 Subscriber = subscriberName
             };
 
-            // Redis throws exception
             _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(cacheKey))
                 .ThrowsAsync(new Exception("Redis connection failed"));
 
-            // Mock the fallback AddAsyncAndExpiryAsync call that might happen
-            _mockRedisService.Setup(x => x.AddAsyncAndExpiryAsync(
-                It.IsAny<string>(), It.IsAny<SubscriberModel>(), It.IsAny<DateTimeOffset>()))
-                .ReturnsAsync(true);
+            MockHttpCall(HttpStatusCode.OK, "{'SubscriberId': 500, 'SubscriberName': 'subscriberWithRedisError'}");
 
             // Act
             var result = await _subscriberService.ValidateAsync(transactionRequest);
 
             // Assert
-            // Since HTTP call will likely fail in test environment, expect NotExistSubscriber
-            result.Should().Be(TransactionResult.NotExistSubscriber);
+            result.Should().Be(TransactionResult.Success);
+            transactionRequest.SubscriberId.Should().Be(500);
         }
 
         [Fact]
@@ -253,7 +279,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
         public async Task ValidateAsync_WithNullSubscriberFromCache_ShouldFallbackToHttpCall()
         {
             // Arrange
-            var subscriberName = "nullSubscriber";
+            var subscriberName = "fallbackSubscriber";
             var cacheKey = $"TransAPI:{subscriberName}";
             
             var transactionRequest = new TransactionRequest
@@ -262,24 +288,24 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 Subscriber = subscriberName
             };
 
-            // Cache returns null
             _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(cacheKey))
                 .ReturnsAsync((SubscriberModel?)null);
 
-            // Mock the AddAsyncAndExpiryAsync call that might happen if HTTP succeeds
-            _mockRedisService.Setup(x => x.AddAsyncAndExpiryAsync(
-                It.IsAny<string>(), It.IsAny<SubscriberModel>(), It.IsAny<DateTimeOffset>()))
-                .ReturnsAsync(true);
+            MockHttpCall(HttpStatusCode.OK, "{'SubscriberId': 501, 'SubscriberName': 'fallbackSubscriber'}");
 
             // Act
             var result = await _subscriberService.ValidateAsync(transactionRequest);
 
             // Assert
-            // Since HTTP call will likely fail in test environment, expect NotExistSubscriber
-            result.Should().Be(TransactionResult.NotExistSubscriber);
+            result.Should().Be(TransactionResult.Success);
+            transactionRequest.SubscriberId.Should().Be(501);
             
-            // Verify cache was checked
             _mockRedisService.Verify(x => x.GetAsync<SubscriberModel>(cacheKey), Times.Once);
+            _mockHttpMessageHandler.Protected().Verify(
+                "SendAsync",
+                Times.Once(),
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>());
         }
 
         #endregion
@@ -290,7 +316,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
         public async Task ValidateAsync_ConcurrentCalls_ShouldHandleCorrectly()
         {
             // Arrange
-            const int concurrentCalls = 10; // Reduced for test stability
+            const int concurrentCalls = 50; // Increased for a more robust test
             var subscriberName = "concurrentSubscriber";
             var cacheKey = $"TransAPI:{subscriberName}";
 
@@ -303,9 +329,10 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(cacheKey))
                 .ReturnsAsync(subscriberModel);
 
-            var tasks = new List<Task<string>>();
+            var tasks = new List<Task>();
 
             // Act
+            var stopwatch = Stopwatch.StartNew();
             for (int i = 0; i < concurrentCalls; i++)
             {
                 var request = new TransactionRequest
@@ -313,14 +340,16 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                     Account = $"account{i}",
                     Subscriber = subscriberName
                 };
-                tasks.Add(_subscriberService.ValidateAsync(request));
+                tasks.Add(Task.Run(() => _subscriberService.ValidateAsync(request)));
             }
 
-            var results = await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks);
+            stopwatch.Stop();
 
             // Assert
-            results.Should().AllBeEquivalentTo(TransactionResult.Success);
-            results.Should().HaveCount(concurrentCalls);
+            // All tasks should complete successfully and quickly
+            tasks.ForEach(t => ((Task<string>)t).Result.Should().Be(TransactionResult.Success));
+            stopwatch.ElapsedMilliseconds.Should().BeLessThan(500); // Should be very fast
         }
 
         #endregion
