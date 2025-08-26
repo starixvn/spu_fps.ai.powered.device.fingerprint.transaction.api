@@ -31,7 +31,7 @@
 
         public static string GetMessage(string code)
         {
-            return MessageMap.TryGetValue(code, out var message) ? message : "Unknown error code";
+            return code != null && MessageMap.TryGetValue(code, out var message) ? message : "Unknown error code";
         }
     }
 }

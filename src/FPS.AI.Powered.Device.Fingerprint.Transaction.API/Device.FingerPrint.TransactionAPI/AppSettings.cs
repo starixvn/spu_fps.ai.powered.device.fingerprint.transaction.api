@@ -100,8 +100,34 @@ namespace Device.FingerPrint.TransactionAPI
             {
                 var value = configuration[key];
 
-                var typeConverter = TypeDescriptor.GetConverter(typeof(T));
+                // Handle boolean conversion with extended support for "1"/"0"
+                if (typeof(T) == typeof(bool))
+                {
+                    if (string.IsNullOrEmpty(value))
+                    {
+                        throw new InvalidCastException($"Key: {key} - Value cannot be null or empty for boolean conversion");
+                    }
 
+                    // Support standard boolean strings and numeric representations
+                    switch (value.ToLowerInvariant())
+                    {
+                        case "true":
+                        case "1":
+                            return (T)(object)true;
+                        case "false":
+                        case "0":
+                            return (T)(object)false;
+                        default:
+                            // Try standard boolean parsing for other cases
+                            if (bool.TryParse(value, out bool boolResult))
+                            {
+                                return (T)(object)boolResult;
+                            }
+                            throw new FormatException($"'{value}' is not a valid boolean value. Expected: true, false, 1, or 0");
+                    }
+                }
+
+                var typeConverter = TypeDescriptor.GetConverter(typeof(T));
                 return (T)typeConverter.ConvertFromString(value);
             }
             catch (Exception ex)
