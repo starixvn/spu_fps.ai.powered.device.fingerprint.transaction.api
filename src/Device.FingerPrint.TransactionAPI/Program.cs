@@ -24,7 +24,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Configure URLs
 #if DEBUG
-builder.WebHost.UseUrls("http://*:5000");
+builder.WebHost.UseUrls("http://*:5250");
 #else
 builder.WebHost.UseUrls("http://*:5000");
 #endif
