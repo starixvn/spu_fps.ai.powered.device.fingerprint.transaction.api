@@ -79,6 +79,12 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             return Ok();
         }
 
+        [HttpPost("APFP/InsertTransaction")]
+        public IActionResult InsertTransactionAPFPAsync(TransactionRequest transRequest)
+        {
+            return Ok();
+        }
+
         private static DeviceModel TransformDeviceModel(TransactionRequest transRequest)
         {
             return new DeviceModel
