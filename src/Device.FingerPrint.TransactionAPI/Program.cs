@@ -7,7 +7,6 @@ using Fanex.Logging;
 using Fanex.Logging.Sentry;
 using MassTransit;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.OpenApi.Models;
 using ONEbook.UM.AspNetCore;
 using ONEbook.UM.Configurations;
 using ONEbook.UM.Helpers;
@@ -47,20 +46,7 @@ RegisterServiceStatic(services, configuration);
 RegisterRedisStatic(services, configuration);
 RegisterMassTransitStatic(services, configuration);
 
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Transaction API",
-        Version = "v1",
-        Description = "This is transaction API",
-        Contact = new OpenApiContact
-        {
-            Name = "API Support",
-            Email = "support@fps.ai"
-        }
-    });
-});
+builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors(p => p.AddPolicy("corsapp", builder =>
 {
@@ -79,8 +65,12 @@ LogManager.SetDefaultLogCategory("FPS-API")
 
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // Log startup information
 LogService.Info($"TransactionAPI {appSettings.Environment} Start!");
@@ -110,19 +100,6 @@ app.UseHealthChecks("/healthz", new HealthCheckOptions
     Predicate = _ => true
 });
 
-if (app.Environment.IsDevelopment() ||
-    app.Configuration.GetValue("Environment", "LOCAL") == "LOCAL" ||
-    app.Configuration.GetValue("Environment", "UAT") == "UAT")
-{
-    app.UseSwagger();
-
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Transaction API V1");
-        c.RoutePrefix = string.Empty; // Set Swagger UI at the app's root
-    });
-}
-
 app.Run();
 
 static void RegisterServiceStatic(IServiceCollection services, IConfiguration configuration)
@@ -139,6 +116,11 @@ static void RegisterServiceStatic(IServiceCollection services, IConfiguration co
 static void RegisterRedisStatic(IServiceCollection services, IConfiguration configuration)
 {
     var redisConfiguration = configuration.GetSection("Redis").Get<RedisConfiguration>();
+
+    if (redisConfiguration is null)
+    {
+        throw new InvalidOperationException("Redis configuration section is missing from appsettings.");
+    }
 
     services.AddSingleton(redisConfiguration);
 
