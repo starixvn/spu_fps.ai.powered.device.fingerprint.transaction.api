@@ -24,7 +24,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Configure URLs
 #if DEBUG
-builder.WebHost.UseUrls("http://*:5250");
+builder.WebHost.UseUrls("http://*:5000");
 #else
 builder.WebHost.UseUrls("http://*:5000");
 #endif
@@ -66,6 +66,9 @@ LogManager.SetDefaultLogCategory("FPS-API")
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 builder.Services.AddHttpClient();
+
+builder.Logging.AddConsole();
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
 var app = builder.Build();
 
