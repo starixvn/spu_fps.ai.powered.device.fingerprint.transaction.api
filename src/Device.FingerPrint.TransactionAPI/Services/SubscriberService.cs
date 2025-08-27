@@ -81,7 +81,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
         {
             try
             {
-                var url = $"{_appSettings.GetSubscriberInfo}?subName={subName}";
+                var url = $"{_appSettings.GetSubscriberInfo}?subscriberName={subName}";
                 var response = await _httpClient.GetStringAsync(url);
                 return JsonConvert.DeserializeObject<SubscriberModel>(response);
             }
