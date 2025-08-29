@@ -8,13 +8,13 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         [HttpPost("APFP/InsertFP4")]
         public IActionResult InsertFP4(FingerprintRequest request)
         {
-            return Ok();
+            return Ok("Ok");
         }
 
         [HttpPost("APFP/InsertFP5")]
         public IActionResult InsertFP5(FingerprintRequest request)
         {
-            return Ok();
+            return Ok("Ok");
         }
     }
 
