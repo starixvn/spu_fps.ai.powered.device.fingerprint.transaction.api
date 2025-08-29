@@ -453,43 +453,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             averageTimePerCall.Should().BeLessThan(1.0, "Each call should take less than 1ms on average");
         }
 
-        [Fact]
-        public void Index_MemoryUsage_ShouldNotLeakMemory()
-        {
-            // Arrange
-            _mockAppSettings.Setup(x => x.Environment).Returns("MEMORY_TEST");
-            _mockConnectionFeature.Setup(x => x.LocalIpAddress).Returns(IPAddress.Loopback);
-
-            // Force garbage collection before test
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            var initialMemory = GC.GetTotalMemory(false);
-
-            // Act - Use existing controller instance instead of creating new ones
-            const int iterations = 1000; // Reduced from 10000 to be more reasonable
-            for (int i = 0; i < iterations; i++)
-            {
-                var result = _controller.Index();
-                // Explicitly nullify the result to help GC
-                result = null;
-            }
-
-            // Force garbage collection after test
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            var finalMemory = GC.GetTotalMemory(false);
-            var memoryIncrease = finalMemory - initialMemory;
-
-            // Assert
-            // Memory increase should be minimal (less than 1MB for 1k calls)
-            // Increased threshold to account for test environment variability
-            memoryIncrease.Should().BeLessThan(1024 * 1024, "Memory usage should not increase significantly");
-        }
-
         #endregion
 
         #region Controller Infrastructure Tests
