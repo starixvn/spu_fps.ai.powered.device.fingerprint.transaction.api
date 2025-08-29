@@ -18,18 +18,27 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         }
     }
 
+    public class Fingperprint
+    {
+
+        public string? Audio { get; set; }
+
+        public string? Browser { get; set; }
+
+        public string? Hardware { get; set; }
+
+        public string? Preferences { get; set; }
+
+        public string? Graphics { get; set; }
+    }
+
     public class FingerprintRequest
     {
         public required string SessionKey { get; set; }
 
-        public string? GroupA { get; set; }
+        public required string Hashed { get; set; }
 
-        public string? GroupB { get; set; }
+        public required Fingperprint FingerPrint { get; set; }
 
-        public string? GroupC { get; set; }
-
-        public string? GroupD { get; set; }
-
-        public string? GroupE { get; set; }
     }
 }
