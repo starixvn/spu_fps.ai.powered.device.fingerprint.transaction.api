@@ -21,7 +21,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         public void InsertFP4_ShouldReturnOk()
         {
             // Arrange
-            var fingerprintRequest = new FingerprintRequest() { SessionKey = "test-session-key"};
+            var fingerprintRequest = new FingerprintRequest() { SessionKey = "test-session-key", Hashed = "Hashed", FingerPrint = new Fingperprint()};
 
             // Act
             var result = _controller.InsertFP4(fingerprintRequest);
@@ -34,7 +34,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         public void InsertFP5_ShouldReturnOk()
         {
             // Arrange
-            var fingerprintRequest = new FingerprintRequest() { SessionKey = "test-session-key" };
+            var fingerprintRequest = new FingerprintRequest() { SessionKey = "test-session-key", Hashed = "Hashed", FingerPrint = new Fingperprint() };
 
             // Act
             var result = _controller.InsertFP5(fingerprintRequest);
