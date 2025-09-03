@@ -8,15 +8,14 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
     [ApiController]
     public class FingerprintController : ControllerBase
     {
-        private readonly ILogger logger;
-        private readonly IRedisService redisService;
-        private readonly ILinkingService linkingService;
-
+        private readonly ILogger _logger;
+        private readonly IRedisService _redisService;
+        private readonly ILinkingService _linkingService;
         public FingerprintController(ILogger logger, IRedisService redisService, ILinkingService linkingService)
         {
-            this.logger = logger;
-            this.redisService = redisService;
-            this.linkingService = linkingService;
+            _logger = logger;
+            _redisService = redisService;
+            _linkingService = linkingService;
         }
 
         [HttpPost("APFP/InsertFP4")]
@@ -25,12 +24,13 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             try
             {
                 var fingerprintJson = JsonSerializer.Serialize(request.FingerPrint);
-                await redisService.HashSetAsync<string>(request.SessionKey, "FP4", fingerprintJson, isForceUpdate: true);
-                return Ok("Ok");
+                await _redisService.HashSetAsync<string>(request.SessionKey, "FP4", fingerprintJson, isForceUpdate: true);
+
+                return Ok($"{request.SessionKey}");
             }
             catch (Exception ex)
             {
-                await logger.ErrorAsync("Error in InsertFP4", ex);
+                await _logger.ErrorAsync("Error in InsertFP4", ex);
                 return BadRequest();
             }
         }
@@ -41,12 +41,13 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             try
             {
                 var fingerprintJson = JsonSerializer.Serialize(request.FingerPrint);
-                await redisService.HashSetAsync<string>(request.SessionKey, "FP5", fingerprintJson, isForceUpdate: true);
-                return Ok("Ok");
+                await _redisService.HashSetAsync<string>(request.SessionKey, "FP5", fingerprintJson, isForceUpdate: true);
+
+                return Ok($"{request.SessionKey}");
             }
             catch (Exception ex)
             {
-                await logger.ErrorAsync("Error in InsertFP4", ex);
+                await _logger.ErrorAsync("Error in InsertFP5", ex);
                 return BadRequest();
             }
         }

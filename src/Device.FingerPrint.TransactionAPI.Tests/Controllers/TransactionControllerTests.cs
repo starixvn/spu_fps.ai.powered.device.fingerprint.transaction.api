@@ -795,14 +795,14 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         #endregion
 
         [Fact]
-        public void InsertTransactionAPFPAsync_ShouldReturnOk()
+        public async Task InsertTransactionAPFPAsync_ShouldReturnOk()
         {
             // Arrange
             var transactionRequest = CreateValidTransactionRequest();
             // Act
-            var result = _controller.InsertTransactionAPFPAsync(transactionRequest);
+            var result = await _controller.InsertTransactionAPFPAsync(transactionRequest);
             // Assert
-            result.Should().BeOfType<OkResult>();
+            result.Should().BeOfType<OkObjectResult>();
         }
     }
 

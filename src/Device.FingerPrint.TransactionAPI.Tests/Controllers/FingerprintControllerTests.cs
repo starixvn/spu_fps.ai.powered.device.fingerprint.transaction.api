@@ -1,4 +1,5 @@
 ﻿using Device.FingerPrint.TransactionAPI.Controllers;
+using Device.FingerPrint.TransactionAPI.Model;
 using Device.FingerPrint.TransactionAPI.Services;
 using Fanex.Logging;
 using FluentAssertions;
@@ -24,29 +25,29 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         }
 
         [Fact]
-        public void InsertFP4_ShouldReturnOk()
+        public async Task InsertFP4_ShouldReturnOk()
         {
             // Arrange
-            var fingerprintRequest = new FingerprintRequest() { SessionKey = "test-session-key", Hashed = "Hashed", FingerPrint = new Fingperprint()};
+            var fingerprintRequest = new FingerprintRequest() { SessionKey = "test-session-key", Hashed = "Hashed", FingerPrint = new APFingerprintModel()};
 
             // Act
-            var result = controller.InsertFP4(fingerprintRequest);
+            var result = await controller.InsertFP4(fingerprintRequest);
 
             // Assert
-            result.Should().BeOfType<OkResult>();
+            result.Should().BeOfType<OkObjectResult>();
         }
 
         [Fact]
-        public void InsertFP5_ShouldReturnOk()
+        public async Task InsertFP5_ShouldReturnOk()
         {
             // Arrange
-            var fingerprintRequest = new FingerprintRequest() { SessionKey = "test-session-key", Hashed = "Hashed", FingerPrint = new Fingperprint() };
+            var fingerprintRequest = new FingerprintRequest() { SessionKey = "test-session-key", Hashed = "Hashed", FingerPrint = new APFingerprintModel() };
 
             // Act
-            var result = controller.InsertFP5(fingerprintRequest);
+            var result = await controller.InsertFP5(fingerprintRequest);
 
             // Assert
-            result.Should().BeOfType<OkResult>();
+            result.Should().BeOfType<OkObjectResult>();
         }
     }
 }
