@@ -1,22 +1,28 @@
 ﻿using Device.FingerPrint.TransactionAPI.Controllers;
+using Device.FingerPrint.TransactionAPI.Services;
+using Fanex.Logging;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Moq;
 using Xunit;
 
 namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
 {
     public class FingerprintControllerTests
     {
-        private readonly FingerprintController _controller;
+        private readonly Mock<ILogger> mockLogger;
+        private readonly Mock<IRedisService> mockRedisService;
+        private readonly Mock<ILinkingService> mockLinkingService;
+        private readonly FingerprintController controller;
+
         public FingerprintControllerTests()
         {
-            _controller = new FingerprintController();
+            mockLogger = new Mock<ILogger>();
+            mockRedisService = new Mock<IRedisService>();
+            mockLinkingService = new Mock<ILinkingService>();
+            controller = new FingerprintController(mockLogger.Object, mockRedisService.Object, mockLinkingService.Object);
         }
+
         [Fact]
         public void InsertFP4_ShouldReturnOk()
         {
@@ -24,7 +30,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             var fingerprintRequest = new FingerprintRequest() { SessionKey = "test-session-key", Hashed = "Hashed", FingerPrint = new Fingperprint()};
 
             // Act
-            var result = _controller.InsertFP4(fingerprintRequest);
+            var result = controller.InsertFP4(fingerprintRequest);
 
             // Assert
             result.Should().BeOfType<OkResult>();
@@ -37,7 +43,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             var fingerprintRequest = new FingerprintRequest() { SessionKey = "test-session-key", Hashed = "Hashed", FingerPrint = new Fingperprint() };
 
             // Act
-            var result = _controller.InsertFP5(fingerprintRequest);
+            var result = controller.InsertFP5(fingerprintRequest);
 
             // Assert
             result.Should().BeOfType<OkResult>();

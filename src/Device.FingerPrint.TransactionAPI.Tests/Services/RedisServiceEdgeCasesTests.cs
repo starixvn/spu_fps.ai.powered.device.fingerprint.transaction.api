@@ -42,7 +42,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             // Arrange
             const string value = "testValue";
 
-            _mockRedisDatabase.Setup(x => x.HashSetAsync<string>(
+            _mockRedisDatabase.Setup(x => x.HashSetAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CommandFlags>()))
                 .ReturnsAsync(true);
 
@@ -101,7 +101,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             const string key = "testKey";
             var largeValue = new string('X', 10000); // 10KB string
 
-            _mockRedisDatabase.Setup(x => x.HashSetAsync<string>(
+            _mockRedisDatabase.Setup(x => x.HashSetAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CommandFlags>()))
                 .ReturnsAsync(true);
 
@@ -162,7 +162,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 }
             };
 
-            _mockRedisDatabase.Setup(x => x.HashSetAsync<TestComplexObject>(
+            _mockRedisDatabase.Setup(x => x.HashSetAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TestComplexObject>(), It.IsAny<bool>(), It.IsAny<CommandFlags>()))
                 .ReturnsAsync(true);
 
@@ -249,7 +249,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             var tasks = new List<Task>();
 
             // Setup mocks for concurrent operations
-            _mockRedisDatabase.Setup(x => x.HashSetAsync<string>(
+            _mockRedisDatabase.Setup(x => x.HashSetAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CommandFlags>()))
                 .ReturnsAsync(true);
 
@@ -310,7 +310,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             const int operationCount = 100;
             var initialMemory = GC.GetTotalMemory(false);
 
-            _mockRedisDatabase.Setup(x => x.HashSetAsync<string>(
+            _mockRedisDatabase.Setup(x => x.HashSetAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CommandFlags>()))
                 .ReturnsAsync(true);
 

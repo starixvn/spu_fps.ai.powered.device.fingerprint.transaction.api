@@ -17,19 +17,22 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         private readonly Fanex.Logging.ILogger logger;
         private readonly ISubscriberService subscriberService;
         private readonly IMassTransitProducer massTransitProducer;
+        private readonly IRedisService redisService;
 
         public TransactionController(
             IMaintenanceService maintenanceService,
             IAppSettings appSettings,
             Fanex.Logging.ILogger logger,
             ISubscriberService subscriberService,
-            IMassTransitProducer massTransitProducer)
+            IMassTransitProducer massTransitProducer,
+            IRedisService redisService)
         {
             this.maintenanceService = maintenanceService;
             this.appSettings = appSettings;
             this.logger = logger;
             this.subscriberService = subscriberService;
             this.massTransitProducer = massTransitProducer;
+            this.redisService = redisService;
         }
 
         [HttpPost("FPS/AddTransaction")]
@@ -80,9 +83,24 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         }
 
         [HttpPost("APFP/InsertTransaction")]
-        public IActionResult InsertTransactionAPFPAsync(TransactionRequest transRequest)
+        public async Task<IActionResult> InsertTransactionAPFPAsync(TransactionRequest request)
         {
-            return Ok();
+            try
+            {
+                if(string.IsNullOrEmpty(request.SessionKey))
+                {
+                    return BadRequest("SessionKey is required");
+                }
+
+                var transactionJson = JsonSerializer.Serialize(request);
+                await redisService.HashSetAsync<string>(request.SessionKey, "Transaction", transactionJson, isForceUpdate: true);
+                return Ok("Ok");
+            }
+            catch (Exception ex)
+            {
+                await logger.ErrorAsync("Error in InsertFP4", ex);
+                return BadRequest();
+            }
         }
 
         private static DeviceModel TransformDeviceModel(TransactionRequest transRequest)

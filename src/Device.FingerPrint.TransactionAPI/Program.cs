@@ -111,6 +111,7 @@ static void RegisterServiceStatic(IServiceCollection services, IConfiguration co
     services.AddSingleton<IUMCacheService, UMCacheService>();
     services.AddSingleton<IUMRestClient, UMRestClient>();
     services.AddSingleton<IMaintenanceService, MaintenanceService>();
+    services.AddSingleton<ILinkingService, LinkingService>();
 }
 
 static void RegisterRedisStatic(IServiceCollection services, IConfiguration configuration)

@@ -34,5 +34,7 @@
         public string? BotD { get; set; }
 
         public MobileModel? Mobile { get; set; }
+
+        public APFingerprintModel? FingerPrint { get; set; }
     }
 }

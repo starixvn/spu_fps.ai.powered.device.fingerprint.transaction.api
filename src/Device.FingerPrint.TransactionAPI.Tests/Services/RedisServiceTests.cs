@@ -65,7 +65,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             const string value = "testValue";
             const bool isForceUpdate = true;
 
-            _mockRedisDatabase.Setup(x => x.HashSetAsync<string>(
+            _mockRedisDatabase.Setup(x => x.HashSetAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CommandFlags>()))
                 .ReturnsAsync(true);
 
@@ -84,7 +84,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             const string key = "testKey";
             const string value = "testValue";
 
-            _mockRedisDatabase.SetupSequence(x => x.HashSetAsync<string>(
+            _mockRedisDatabase.SetupSequence(x => x.HashSetAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CommandFlags>()))
                 .ThrowsAsync(new RedisConnectionException(ConnectionFailureType.SocketClosed, "Connection lost"))
                 .ReturnsAsync(true);
@@ -104,7 +104,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             const string key = "testKey";
             const string value = "testValue";
 
-            _mockRedisDatabase.Setup(x => x.HashSetAsync<string>(
+            _mockRedisDatabase.Setup(x => x.HashSetAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CommandFlags>()))
                 .ThrowsAsync(new RedisConnectionException(ConnectionFailureType.SocketClosed, "Connection lost"));
 
@@ -272,7 +272,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             const string key = "testKey";
             const string value = "testValue";
 
-            _mockRedisDatabase.Setup(x => x.SetAddAsync<string>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CommandFlags>()))
+            _mockRedisDatabase.Setup(x => x.SetAddAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CommandFlags>()))
                 .ReturnsAsync(true);
 
             // Act
@@ -373,7 +373,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             var expiresAt = DateTimeOffset.UtcNow.AddHours(1);
             const bool isForceUpdate = true;
 
-            _mockRedisDatabase.Setup(x => x.HashSetAsync<string>(
+            _mockRedisDatabase.Setup(x => x.HashSetAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CommandFlags>()))
                 .ReturnsAsync(true);
 

@@ -43,19 +43,5 @@
         public string? SessionKey { get; set; }
 
         public DateTime TransDate { get; set; }
-
-        public string? GroupA { get; set; }
-
-        public string? GroupB { get; set; }
-
-        public string? GroupC { get; set; }
-
-        public string? GroupD { get; set; }
-
-        public string? GroupE { get; set; }
-
-        public string? HashFP4 { get; set; }
-
-        public string? HashFP5 { get; set; }
     }
 }

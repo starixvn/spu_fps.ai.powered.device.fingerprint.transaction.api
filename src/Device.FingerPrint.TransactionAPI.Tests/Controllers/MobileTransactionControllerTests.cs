@@ -26,7 +26,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
     public class MobileTransactionControllerTests
     {
         private readonly Mock<IAppSettings> _mockAppSettings;
-        private readonly Mock<Fanex.Logging.ILogger> _mockLogger;
+        private readonly Mock<ILogger> _mockLogger;
         private readonly Mock<IMassTransitProducer> _mockMassTransitProducer;
         private readonly Mock<HttpContext> _mockHttpContext;
         private readonly Mock<HttpRequest> _mockHttpRequest;
@@ -43,7 +43,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         public MobileTransactionControllerTests()
         {
             _mockAppSettings = new Mock<IAppSettings>();
-            _mockLogger = new Mock<Fanex.Logging.ILogger>();
+            _mockLogger = new Mock<ILogger>();
             _mockMassTransitProducer = new Mock<IMassTransitProducer>();
             _mockHttpContext = new Mock<HttpContext>();
             _mockHttpRequest = new Mock<HttpRequest>();

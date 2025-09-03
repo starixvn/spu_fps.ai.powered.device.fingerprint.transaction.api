@@ -28,9 +28,10 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
     {
         private readonly Mock<IMaintenanceService> _mockMaintenanceService;
         private readonly Mock<IAppSettings> _mockAppSettings;
-        private readonly Mock<Fanex.Logging.ILogger> _mockLogger;
+        private readonly Mock<ILogger> _mockLogger;
         private readonly Mock<ISubscriberService> _mockSubscriberService;
         private readonly Mock<IMassTransitProducer> _mockMassTransitProducer;
+        private readonly Mock<IRedisService> _mockRedisService;
         private readonly TransactionController _controller;
 
         static TransactionControllerTests()
@@ -44,16 +45,18 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         {
             _mockMaintenanceService = new Mock<IMaintenanceService>();
             _mockAppSettings = new Mock<IAppSettings>();
-            _mockLogger = new Mock<Fanex.Logging.ILogger>();
+            _mockLogger = new Mock<ILogger>();
             _mockSubscriberService = new Mock<ISubscriberService>();
             _mockMassTransitProducer = new Mock<IMassTransitProducer>();
+            _mockRedisService = new Mock<IRedisService>();
 
             _controller = new TransactionController(
                 _mockMaintenanceService.Object,
                 _mockAppSettings.Object,
                 _mockLogger.Object,
                 _mockSubscriberService.Object,
-                _mockMassTransitProducer.Object);
+                _mockMassTransitProducer.Object,
+                _mockRedisService.Object);
 
             SetupDefaultMocks();
         }
@@ -339,7 +342,8 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
                 _mockAppSettings.Object,
                 _mockLogger.Object,
                 _mockSubscriberService.Object,
-                slowQueue.Object);
+                slowQueue.Object,
+                _mockRedisService.Object);
 
             // Act
             var stopwatch = Stopwatch.StartNew();

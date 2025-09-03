@@ -1,44 +1,54 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Device.FingerPrint.TransactionAPI.Model;
+using Device.FingerPrint.TransactionAPI.Services;
+using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace Device.FingerPrint.TransactionAPI.Controllers
 {
     [ApiController]
     public class FingerprintController : ControllerBase
     {
-        [HttpPost("APFP/InsertFP4")]
-        public IActionResult InsertFP4(FingerprintRequest request)
+        private readonly ILogger logger;
+        private readonly IRedisService redisService;
+        private readonly ILinkingService linkingService;
+
+        public FingerprintController(ILogger logger, IRedisService redisService, ILinkingService linkingService)
         {
-            return Ok("Ok");
+            this.logger = logger;
+            this.redisService = redisService;
+            this.linkingService = linkingService;
+        }
+
+        [HttpPost("APFP/InsertFP4")]
+        public async Task<IActionResult> InsertFP4(FingerprintRequest request)
+        {
+            try
+            {
+                var fingerprintJson = JsonSerializer.Serialize(request.FingerPrint);
+                await redisService.HashSetAsync<string>(request.SessionKey, "FP4", fingerprintJson, isForceUpdate: true);
+                return Ok("Ok");
+            }
+            catch (Exception ex)
+            {
+                await logger.ErrorAsync("Error in InsertFP4", ex);
+                return BadRequest();
+            }
         }
 
         [HttpPost("APFP/InsertFP5")]
-        public IActionResult InsertFP5(FingerprintRequest request)
+        public async Task<IActionResult> InsertFP5(FingerprintRequest request)
         {
-            return Ok("Ok");
+            try
+            {
+                var fingerprintJson = JsonSerializer.Serialize(request.FingerPrint);
+                await redisService.HashSetAsync<string>(request.SessionKey, "FP5", fingerprintJson, isForceUpdate: true);
+                return Ok("Ok");
+            }
+            catch (Exception ex)
+            {
+                await logger.ErrorAsync("Error in InsertFP4", ex);
+                return BadRequest();
+            }
         }
-    }
-
-    public class Fingperprint
-    {
-
-        public string? Audio { get; set; }
-
-        public string? Browser { get; set; }
-
-        public string? Hardware { get; set; }
-
-        public string? Preferences { get; set; }
-
-        public string? Graphics { get; set; }
-    }
-
-    public class FingerprintRequest
-    {
-        public required string SessionKey { get; set; }
-
-        public required string Hashed { get; set; }
-
-        public required Fingperprint FingerPrint { get; set; }
-
     }
 }
