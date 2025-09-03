@@ -5,13 +5,8 @@ using Moq;
 using Xunit;
 using Fanex.Logging;
 using System.Diagnostics;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Moq.Protected;
-using System.Threading;
 using System.Net;
-using System;
-using System.Collections.Generic;
 
 namespace Device.FingerPrint.TransactionAPI.Tests.Services
 {

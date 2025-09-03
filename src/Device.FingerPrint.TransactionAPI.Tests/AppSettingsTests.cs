@@ -1,4 +1,3 @@
-using Device.FingerPrint.TransactionAPI;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Moq;

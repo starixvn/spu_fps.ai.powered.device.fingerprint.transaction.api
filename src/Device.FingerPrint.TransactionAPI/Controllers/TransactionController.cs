@@ -18,6 +18,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         private readonly ISubscriberService subscriberService;
         private readonly IMassTransitProducer massTransitProducer;
         private readonly IRedisService redisService;
+        private readonly ILinkingService linkingService;
 
         public TransactionController(
             IMaintenanceService maintenanceService,
@@ -25,7 +26,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             Fanex.Logging.ILogger logger,
             ISubscriberService subscriberService,
             IMassTransitProducer massTransitProducer,
-            IRedisService redisService)
+            IRedisService redisService,
+            ILinkingService linkingService)
         {
             this.maintenanceService = maintenanceService;
             this.appSettings = appSettings;
@@ -33,6 +35,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             this.subscriberService = subscriberService;
             this.massTransitProducer = massTransitProducer;
             this.redisService = redisService;
+            this.linkingService = linkingService;
         }
 
         [HttpPost("FPS/AddTransaction")]
@@ -93,7 +96,10 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 }
 
                 var transactionJson = JsonSerializer.Serialize(request);
-                await redisService.HashSetAsync<string>(request.SessionKey, "Transaction", transactionJson, isForceUpdate: true);
+                await redisService.HashSetAsync<string>(request.SessionKey, linkingService.TRANSACTION_REDIS_KEY, transactionJson, isForceUpdate: true);
+
+                await linkingService.Link(request.SessionKey);
+
                 return Ok("Ok");
             }
             catch (Exception ex)

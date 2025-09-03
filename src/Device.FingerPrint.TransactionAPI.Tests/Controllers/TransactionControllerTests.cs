@@ -7,23 +7,12 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using ONEbook.UM.Models;
 using ONEbook.UM.Services;
-using System.Text.Json;
 using Xunit;
 using Fanex.Logging;
 using System.Diagnostics;
 
 namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
 {
-    /// <summary>
-    /// Comprehensive test suite for TransactionController
-    /// Tests all public methods and their various scenarios including:
-    /// - Successful transaction processing
-    /// - Validation failures
-    /// - Maintenance mode handling
-    /// - Ignored sites processing
-    /// - Exception handling
-    /// - Data transformation logic
-    /// </summary>
     public class TransactionControllerTests
     {
         private readonly Mock<IMaintenanceService> _mockMaintenanceService;
@@ -32,14 +21,8 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         private readonly Mock<ISubscriberService> _mockSubscriberService;
         private readonly Mock<IMassTransitProducer> _mockMassTransitProducer;
         private readonly Mock<IRedisService> _mockRedisService;
+        private readonly Mock<ILinkingService> _mockLinkingService;
         private readonly TransactionController _controller;
-
-        static TransactionControllerTests()
-        {
-            // Initialize logging system for tests to prevent NotImplementedException
-            LogManager.SetDefaultLogCategory("Test")
-                .Use([new TestLogger()]);
-        }
 
         public TransactionControllerTests()
         {
@@ -49,6 +32,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             _mockSubscriberService = new Mock<ISubscriberService>();
             _mockMassTransitProducer = new Mock<IMassTransitProducer>();
             _mockRedisService = new Mock<IRedisService>();
+            _mockLinkingService = new Mock<ILinkingService>();
 
             _controller = new TransactionController(
                 _mockMaintenanceService.Object,
@@ -56,7 +40,8 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
                 _mockLogger.Object,
                 _mockSubscriberService.Object,
                 _mockMassTransitProducer.Object,
-                _mockRedisService.Object);
+                _mockRedisService.Object,
+                _mockLinkingService.Object);
 
             SetupDefaultMocks();
         }
@@ -343,7 +328,8 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
                 _mockLogger.Object,
                 _mockSubscriberService.Object,
                 slowQueue.Object,
-                _mockRedisService.Object);
+                _mockRedisService.Object,
+                _mockLinkingService.Object);
 
             // Act
             var stopwatch = Stopwatch.StartNew();
@@ -804,24 +790,5 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             // Assert
             result.Should().BeOfType<OkObjectResult>();
         }
-    }
-
-    /// <summary>
-    /// Simple test logger implementation to prevent logging exceptions in tests
-    /// </summary>
-    internal class TestLogger : ILogEngine
-    {
-        public void Debug(string message, string? category = null) { }
-        public void Error(string message, string? category = null) { }
-        public void Info(string message, string? category = null) { }
-        public void Warning(string message, string? category = null) { }
-        public Task DebugAsync(string message, string? category = null) => Task.CompletedTask;
-        public Task ErrorAsync(string message, string? category = null) => Task.CompletedTask;
-        public Task InfoAsync(string message, string? category = null) => Task.CompletedTask;
-        public Task WarningAsync(string message, string? category = null) => Task.CompletedTask;
-        
-        public void Write(string message, TraceEventType eventType, string? category = null) { }
-        public Task WriteAsync(string message, TraceEventType eventType, string? category = null) => Task.CompletedTask;
-        public string RenderJavascriptLogger() => string.Empty;
     }
 }

@@ -33,13 +33,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         private readonly Mock<IHeaderDictionary> _mockHeaders;
         private readonly MobileTransactionController _controller;
 
-        static MobileTransactionControllerTests()
-        {
-            // Initialize logging system for tests to prevent NotImplementedException
-            LogManager.SetDefaultLogCategory("Test")
-                .Use([new TestLogger()]);
-        }
-
         public MobileTransactionControllerTests()
         {
             _mockAppSettings = new Mock<IAppSettings>();
