@@ -28,7 +28,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         public async Task InsertFP4_ShouldReturnOk()
         {
             // Arrange
-            var fingerprintRequest = new FingerprintRequest() { SessionKey = "test-session-key", Hashed = "Hashed", FingerPrint = new APFingerprintModel()};
+            var fingerprintRequest = new FingerprintRequest() { SessionKey = "test-session-key", Hashed = "Hashed", Fingerprint = new APFingerprintModel()};
 
             // Act
             var result = await controller.InsertFP4(fingerprintRequest);
@@ -41,7 +41,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         public async Task InsertFP5_ShouldReturnOk()
         {
             // Arrange
-            var fingerprintRequest = new FingerprintRequest() { SessionKey = "test-session-key", Hashed = "Hashed", FingerPrint = new APFingerprintModel() };
+            var fingerprintRequest = new FingerprintRequest() { SessionKey = "test-session-key", Hashed = "Hashed", Fingerprint = new APFingerprintModel() };
 
             // Act
             var result = await controller.InsertFP5(fingerprintRequest);

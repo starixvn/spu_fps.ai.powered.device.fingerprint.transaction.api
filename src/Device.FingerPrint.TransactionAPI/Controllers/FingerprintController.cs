@@ -23,8 +23,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         {
             try
             {
-                var fingerprintJson = JsonSerializer.Serialize(request.FingerPrint);
-                await _redisService.HashSetAsync<string>(request.SessionKey, _linkingService.FP4_REDIS_KEY, fingerprintJson, isForceUpdate: true);
+                await _linkingService.InsertFingerprint(request.SessionKey, _linkingService.FP4_REDIS_KEY, request.Fingerprint);
 
                 await _linkingService.LinkingOnInsert(request.SessionKey);
 
@@ -42,8 +41,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         {
             try
             {
-                var fingerprintJson = JsonSerializer.Serialize(request.FingerPrint);
-                await _redisService.HashSetAsync<string>(request.SessionKey, _linkingService.FP5_REDIS_KEY, fingerprintJson, isForceUpdate: true);
+                await _linkingService.InsertFingerprint(request.SessionKey, _linkingService.FP5_REDIS_KEY, request.Fingerprint);
 
                 await _linkingService.LinkingOnInsert(request.SessionKey);
 

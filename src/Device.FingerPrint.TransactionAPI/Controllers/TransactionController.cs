@@ -95,9 +95,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                     return BadRequest("SessionKey is required");
                 }
 
-                var transactionJson = JsonSerializer.Serialize(request);
-                await redisService.HashSetAsync<string>(request.SessionKey, linkingService.TRANSACTION_REDIS_KEY, transactionJson, isForceUpdate: true);
-
+                await linkingService.InsertTransaction(request.SessionKey, request);
                 await linkingService.LinkingOnInsert(request.SessionKey);
 
                 return Ok("Ok");

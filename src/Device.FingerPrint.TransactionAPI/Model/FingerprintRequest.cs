@@ -6,7 +6,7 @@
 
         public required string Hashed { get; set; }
 
-        public required APFingerprintModel FingerPrint { get; set; }
+        public required APFingerprintModel Fingerprint { get; set; }
 
     }
 }

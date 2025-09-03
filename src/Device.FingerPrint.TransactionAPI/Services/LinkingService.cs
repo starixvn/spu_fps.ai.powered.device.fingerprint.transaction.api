@@ -1,6 +1,8 @@
 ﻿using Device.FingerPrint.TransactionAPI.Model;
 using Device.FingerPrint.TransactionAPI.Queue;
 using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Device.FingerPrint.TransactionAPI.Services
 {
@@ -11,6 +13,9 @@ namespace Device.FingerPrint.TransactionAPI.Services
         string TRANSACTION_REDIS_KEY { get; }
 
         Task LinkingOnInsert(string sessionKey);
+
+        Task InsertFingerprint(string sessionKey, string key, APFingerprintModel fingerprint);
+        Task InsertTransaction(string sessionKey, TransactionRequest transaction);
     }
 
     public class LinkingService : ILinkingService
@@ -18,6 +23,10 @@ namespace Device.FingerPrint.TransactionAPI.Services
         public string FP4_REDIS_KEY { get; } = "FP4";
         public string FP5_REDIS_KEY { get; } = "FP5";
         public string TRANSACTION_REDIS_KEY { get; } = "Transaction";
+
+        private const int TRANSACTION_TTL_IN_SECONDS = 90;
+
+        private const int FINGERPRINT_TTL_IN_SECONDS = 3 * 60 * 60;
 
         private readonly ILogger _logger;
         private readonly IAppSettings _appSettings;
@@ -30,6 +39,55 @@ namespace Device.FingerPrint.TransactionAPI.Services
             _appSettings = appSettings;
             _redisService = redisService;
             _massTransitProducer = massTransitProducer;
+        }
+
+        public async Task InsertFingerprint(string sessionKey, string key, APFingerprintModel fingerprint)
+        {
+            var updateExpire = true;
+
+            var isTransactionExists = await _redisService.HashExistAsync<string>(sessionKey, TRANSACTION_REDIS_KEY);
+            var isFingerprintExists = await _redisService.HashExistAsync<string>(sessionKey, (key == FP4_REDIS_KEY ? FP5_REDIS_KEY : FP4_REDIS_KEY));
+            if (isTransactionExists || isFingerprintExists)
+            {
+                updateExpire = false;
+            }
+
+            if(updateExpire)
+            {
+                var expireAt = DateTimeOffset.Now.AddSeconds(FINGERPRINT_TTL_IN_SECONDS);
+                var fingerprintJson = JsonSerializer.Serialize(fingerprint);
+
+                await _redisService.HashSetAndExpiryAsync<string>(sessionKey, key, fingerprintJson, expireAt, isForceUpdate: true);
+            }
+            else
+            {
+                var fingerprintJson = JsonSerializer.Serialize(fingerprint);
+                await _redisService.HashSetAsync<string>(sessionKey, key, fingerprintJson, isForceUpdate: true);
+            }
+        }
+
+        public async Task InsertTransaction(string sessionKey, TransactionRequest transaction)
+        {
+            var updateExpire = true;
+
+            var isTransactionExists = await _redisService.HashExistAsync<string>(sessionKey, TRANSACTION_REDIS_KEY);
+            if (isTransactionExists)
+            {
+                updateExpire = false;
+            }
+
+            if (updateExpire)
+            {
+                var expireAt = DateTimeOffset.Now.AddSeconds(TRANSACTION_TTL_IN_SECONDS);
+                var transactionJson = JsonSerializer.Serialize(transaction);
+
+                await _redisService.HashSetAndExpiryAsync<string>(sessionKey, TRANSACTION_REDIS_KEY, transactionJson, expireAt, isForceUpdate: true);
+            }
+            else
+            {
+                var transactionJson = JsonSerializer.Serialize(transaction);
+                await _redisService.HashSetAsync<string>(sessionKey, TRANSACTION_REDIS_KEY, transactionJson, isForceUpdate: true);
+            }
         }
 
         public async Task LinkingOnInsert(string sessionKey)
@@ -51,18 +109,19 @@ namespace Device.FingerPrint.TransactionAPI.Services
                     return;
                 }
 
-                var fingerprint4 = await _redisService.HashGetAsync<APFingerprintModel>(sessionKey, FP4_REDIS_KEY);
-                var fingerprint5 = await _redisService.HashGetAsync<APFingerprintModel>(sessionKey, FP5_REDIS_KEY);
-                var transactionRequest = await _redisService.HashGetAsync<TransactionRequest>(sessionKey, TRANSACTION_REDIS_KEY);
+                var fingerprint4RedisValue = await _redisService.HashGetAsync<string>(sessionKey, FP4_REDIS_KEY);
+                var fingerprint5RedisValue = await _redisService.HashGetAsync<string>(sessionKey, FP5_REDIS_KEY);
+                var transactionRedisValue = await _redisService.HashGetAsync<string>(sessionKey, TRANSACTION_REDIS_KEY);
 
-                if(transactionRequest is null)
-                {
-                    return;
-                }
+                var fingerprint4 = JsonSerializer.Deserialize<APFingerprintModel>(fingerprint4RedisValue);
+                var fingerprint5 = JsonSerializer.Deserialize<APFingerprintModel>(fingerprint5RedisValue);
+                var transactionRequest = JsonSerializer.Deserialize<TransactionRequest>(transactionRedisValue);
 
                 var messageQueue = BuildMessageQueue(transactionRequest, fingerprint4, fingerprint5);
 
                 await _massTransitProducer.SendAsync(messageQueue, _appSettings.QueueName);
+
+                await _redisService.HashDeleteAsync(sessionKey, [FP4_REDIS_KEY, FP5_REDIS_KEY, TRANSACTION_REDIS_KEY]);
             }
             catch (Exception ex)
             {
