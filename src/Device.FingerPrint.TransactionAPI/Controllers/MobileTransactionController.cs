@@ -84,7 +84,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                     OS = transactionRequest.OS,
                     SdkVersion = transactionRequest.SdkVersion,
                     SystemLanguage = transactionRequest.SystemLanguage,
-                    Timezone = transactionRequest.Timezone
+                    Timezone = transactionRequest.Timezone,
+                    DeviceDetails = transactionRequest.DeviceDetails
                 }
             };
 

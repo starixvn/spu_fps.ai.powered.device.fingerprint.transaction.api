@@ -40,6 +40,8 @@
 
         public string? IP { get; set; }
 
+        public string? DeviceDetails { get; set; }
+
         public DateTime TransDate { get; set; }
     }
 }
