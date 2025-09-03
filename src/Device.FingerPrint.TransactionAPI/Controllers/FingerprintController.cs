@@ -1,7 +1,6 @@
 ﻿using Device.FingerPrint.TransactionAPI.Model;
 using Device.FingerPrint.TransactionAPI.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 
 namespace Device.FingerPrint.TransactionAPI.Controllers
 {
@@ -9,12 +8,10 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
     public class FingerprintController : ControllerBase
     {
         private readonly ILogger _logger;
-        private readonly IRedisService _redisService;
         private readonly ILinkingService _linkingService;
-        public FingerprintController(ILogger logger, IRedisService redisService, ILinkingService linkingService)
+        public FingerprintController(ILogger logger, ILinkingService linkingService)
         {
             _logger = logger;
-            _redisService = redisService;
             _linkingService = linkingService;
         }
 

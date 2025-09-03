@@ -104,7 +104,7 @@ app.Run();
 
 static void RegisterServiceStatic(IServiceCollection services, IConfiguration configuration)
 {
-    services.AddSingleton<Fanex.Logging.ILogger, Logger>();
+    services.AddSingleton<ILogger, Logger>();
     services.AddSingleton<ISubscriberService, SubscriberService>();
     services.AddSingleton<IMassTransitProducer, MassTransitProducer>();
     services.AddSingleton(new UMClientConfiguration().Initialize(configuration));

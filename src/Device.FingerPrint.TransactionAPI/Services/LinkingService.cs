@@ -2,7 +2,6 @@
 using Device.FingerPrint.TransactionAPI.Queue;
 using System.Globalization;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Device.FingerPrint.TransactionAPI.Services
 {
@@ -57,12 +56,12 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 var expireAt = DateTimeOffset.Now.AddSeconds(FINGERPRINT_TTL_IN_SECONDS);
                 var fingerprintJson = JsonSerializer.Serialize(fingerprint);
 
-                await _redisService.HashSetAndExpiryAsync<string>(sessionKey, key, fingerprintJson, expireAt, isForceUpdate: true);
+                await _redisService.HashSetAndExpiryAsync(sessionKey, key, fingerprintJson, expireAt, isForceUpdate: true);
             }
             else
             {
                 var fingerprintJson = JsonSerializer.Serialize(fingerprint);
-                await _redisService.HashSetAsync<string>(sessionKey, key, fingerprintJson, isForceUpdate: true);
+                await _redisService.HashSetAsync(sessionKey, key, fingerprintJson, isForceUpdate: true);
             }
         }
 
@@ -81,12 +80,12 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 var expireAt = DateTimeOffset.Now.AddSeconds(TRANSACTION_TTL_IN_SECONDS);
                 var transactionJson = JsonSerializer.Serialize(transaction);
 
-                await _redisService.HashSetAndExpiryAsync<string>(sessionKey, TRANSACTION_REDIS_KEY, transactionJson, expireAt, isForceUpdate: true);
+                await _redisService.HashSetAndExpiryAsync(sessionKey, TRANSACTION_REDIS_KEY, transactionJson, expireAt, isForceUpdate: true);
             }
             else
             {
                 var transactionJson = JsonSerializer.Serialize(transaction);
-                await _redisService.HashSetAsync<string>(sessionKey, TRANSACTION_REDIS_KEY, transactionJson, isForceUpdate: true);
+                await _redisService.HashSetAsync(sessionKey, TRANSACTION_REDIS_KEY, transactionJson, isForceUpdate: true);
             }
         }
 

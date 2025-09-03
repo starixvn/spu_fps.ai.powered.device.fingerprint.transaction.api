@@ -1,9 +1,5 @@
 ﻿using Device.FingerPrint.TransactionAPI.Model;
-using Fanex.Logging;
 using Newtonsoft.Json;
-using System;
-using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace Device.FingerPrint.TransactionAPI.Services
 {
@@ -12,12 +8,12 @@ namespace Device.FingerPrint.TransactionAPI.Services
         Task<string> ValidateAsync(TransactionRequest transactionRequest);
     }
 
-    public class SubscriberService(IAppSettings appSettings, IRedisService redisService, HttpClient httpClient, Fanex.Logging.ILogger logger) : ISubscriberService
+    public class SubscriberService(IAppSettings appSettings, IRedisService redisService, HttpClient httpClient, ILogger logger) : ISubscriberService
     {
         private readonly IAppSettings _appSettings = appSettings;
         private readonly IRedisService _redisService = redisService;
         private readonly HttpClient _httpClient = httpClient;
-        private readonly Fanex.Logging.ILogger _logger = logger;
+        private readonly ILogger _logger = logger;
 
         public async Task<string> ValidateAsync(TransactionRequest transactionRequest)
         {

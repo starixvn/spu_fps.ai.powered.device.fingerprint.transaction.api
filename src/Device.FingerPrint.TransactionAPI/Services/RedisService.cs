@@ -82,7 +82,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
         public Task<bool> HashSetAsync<T>(string hashKey, string key, T value, bool isForceUpdate)
         {
             return ExecuteWithRetryAsync(async () =>
-                await redisDatabase.HashSetAsync<T>(hashKey, key, value, nx: !isForceUpdate, flag: CommandFlags.FireAndForget),
+                await redisDatabase.HashSetAsync(hashKey, key, value, nx: !isForceUpdate, flag: CommandFlags.FireAndForget),
                 "HashSet");
         }
 
@@ -130,7 +130,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
         public Task<bool> SetAsync<T>(string key, T value)
         {
             return ExecuteWithRetryAsync(async () =>
-                await redisDatabase.SetAddAsync<T>(key, value, flag: CommandFlags.FireAndForget),
+                await redisDatabase.SetAddAsync(key, value, flag: CommandFlags.FireAndForget),
                 "Set");
         }
 

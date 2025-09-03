@@ -5,6 +5,7 @@ using Fanex.Logging;
 using FluentAssertions;
 using Moq;
 using System.Globalization;
+using System.Text.Json;
 using Xunit;
 
 namespace Device.FingerPrint.TransactionAPI.Tests.Services
@@ -56,24 +57,24 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 .ReturnsAsync(true);
 
             _mockRedisService
-                .Setup(r => r.HashGetAsync<APFingerprintModel>(It.IsAny<string>(), _linkingService.FP4_REDIS_KEY))
-                .ReturnsAsync(fp4MockData);
+                .Setup(r => r.HashGetAsync<string>(It.IsAny<string>(), _linkingService.FP4_REDIS_KEY))
+                .ReturnsAsync(JsonSerializer.Serialize(fp4MockData));
 
             _mockRedisService
                 .Setup(r => r.HashExistAsync<string>(It.IsAny<string>(), _linkingService.FP5_REDIS_KEY))
                 .ReturnsAsync(true);
 
             _mockRedisService
-                .Setup(r => r.HashGetAsync<APFingerprintModel>(It.IsAny<string>(), _linkingService.FP5_REDIS_KEY))
-                .ReturnsAsync(fp5MockData);
+                .Setup(r => r.HashGetAsync<string>(It.IsAny<string>(), _linkingService.FP5_REDIS_KEY))
+                .ReturnsAsync(JsonSerializer.Serialize(fp5MockData));
 
             _mockRedisService
                 .Setup(r => r.HashExistAsync<string>(It.IsAny<string>(), _linkingService.TRANSACTION_REDIS_KEY))
                 .ReturnsAsync(true);
 
             _mockRedisService
-               .Setup(r => r.HashGetAsync<TransactionRequest>(It.IsAny<string>(), _linkingService.TRANSACTION_REDIS_KEY))
-               .ReturnsAsync(transactionMockData);
+               .Setup(r => r.HashGetAsync<string>(It.IsAny<string>(), _linkingService.TRANSACTION_REDIS_KEY))
+               .ReturnsAsync(JsonSerializer.Serialize(transactionMockData));
 
             var expectedMessage = new MessageQueue
             {

@@ -1,6 +1,4 @@
 ﻿using System.ComponentModel;
-using Microsoft.Extensions.Configuration;
-using System;
 
 namespace Device.FingerPrint.TransactionAPI
 {

@@ -14,16 +14,15 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
     {
         private readonly IMaintenanceService maintenanceService;
         private readonly IAppSettings appSettings;
-        private readonly Fanex.Logging.ILogger logger;
+        private readonly ILogger logger;
         private readonly ISubscriberService subscriberService;
         private readonly IMassTransitProducer massTransitProducer;
-        private readonly IRedisService redisService;
         private readonly ILinkingService linkingService;
 
         public TransactionController(
             IMaintenanceService maintenanceService,
             IAppSettings appSettings,
-            Fanex.Logging.ILogger logger,
+            ILogger logger,
             ISubscriberService subscriberService,
             IMassTransitProducer massTransitProducer,
             IRedisService redisService,
@@ -34,7 +33,6 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             this.logger = logger;
             this.subscriberService = subscriberService;
             this.massTransitProducer = massTransitProducer;
-            this.redisService = redisService;
             this.linkingService = linkingService;
         }
 

@@ -10,12 +10,12 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
     public class MobileTransactionController : ControllerBase
     {
         private readonly IAppSettings appSettings;
-        private readonly Fanex.Logging.ILogger logger;
+        private readonly ILogger logger;
         private readonly IMassTransitProducer massTransitProducer;
 
         public MobileTransactionController(
             IAppSettings appSettings,
-            Fanex.Logging.ILogger logger,
+            ILogger logger,
             IMassTransitProducer massTransitProducer)
         {
             this.appSettings = appSettings;

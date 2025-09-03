@@ -12,16 +12,14 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
     public class FingerprintControllerTests
     {
         private readonly Mock<ILogger> mockLogger;
-        private readonly Mock<IRedisService> mockRedisService;
         private readonly Mock<ILinkingService> mockLinkingService;
         private readonly FingerprintController controller;
 
         public FingerprintControllerTests()
         {
             mockLogger = new Mock<ILogger>();
-            mockRedisService = new Mock<IRedisService>();
             mockLinkingService = new Mock<ILinkingService>();
-            controller = new FingerprintController(mockLogger.Object, mockRedisService.Object, mockLinkingService.Object);
+            controller = new FingerprintController(mockLogger.Object, mockLinkingService.Object);
         }
 
         [Fact]
