@@ -148,7 +148,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 var fingerprint5RedisValue = await getFP5Task;
                 var transactionRedisValue = await getTransactionTask;
 
-                if (string.IsNullOrEmpty(transactionRedisValue))
+                if (transactionRedisValue.IsNullOrEmpty)
                 {
                     await _redisService.HashDeleteAsync(sessionKey, [FP4_REDIS_KEY, FP5_REDIS_KEY, TRANSACTION_REDIS_KEY]);
                     return false;
