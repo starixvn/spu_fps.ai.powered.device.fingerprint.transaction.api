@@ -12,7 +12,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
         string TRANSACTION_REDIS_KEY { get; }
 
         Task<bool> LinkingOnInsert(string sessionKey);
-        Task<bool> LinkingOnExpired(string sessionKey);
+        Task<bool> LinkingOnExpired(string key);
 
         Task InsertFingerprint(string sessionKey, string key, APFingerprintModel fingerprint);
         Task InsertTransaction(string sessionKey, TransactionRequest transaction);
