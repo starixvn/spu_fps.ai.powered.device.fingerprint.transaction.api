@@ -4,6 +4,8 @@ using Device.FingerPrint.TransactionAPI.Services;
 using Fanex.Logging;
 using FluentAssertions;
 using Moq;
+using StackExchange.Redis;
+using StackExchange.Redis.Extensions.Core.Abstractions;
 using System.Globalization;
 using System.Text.Json;
 using Xunit;
@@ -15,6 +17,9 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
         private readonly Mock<ILogger> _mockLogger;
         private readonly Mock<IAppSettings> _mockAppSettings;
         private readonly Mock<IRedisService> _mockRedisService;
+        private readonly Mock<IRedisDatabase> _mockRedisDatabase;
+        private readonly Mock<IDatabase> _mockDatabase;
+        private readonly Mock<IBatch> _mockBatch;
         private readonly Mock<IMassTransitProducer> _mockMassTransitProducer;
 
         private readonly LinkingService _linkingService;
@@ -44,7 +49,16 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             _mockLogger = new Mock<ILogger>();
             _mockAppSettings = new Mock<IAppSettings>();
             _mockRedisService = new Mock<IRedisService>();
+            _mockRedisDatabase = new Mock<IRedisDatabase>();
+            _mockDatabase = new Mock<IDatabase>();
+            _mockBatch = new Mock<IBatch>();
             _mockMassTransitProducer = new Mock<IMassTransitProducer>();
+
+            // Setup the Redis service to return the mock database
+            _mockRedisService.Setup(r => r.RedisDatabase).Returns(_mockRedisDatabase.Object);
+            _mockRedisDatabase.Setup(d => d.Database).Returns(_mockDatabase.Object);
+            _mockDatabase.Setup(d => d.CreateBatch(It.IsAny<object>())).Returns(_mockBatch.Object);
+
             _linkingService = new LinkingService(_mockLogger.Object, _mockAppSettings.Object, _mockRedisService.Object, _mockMassTransitProducer.Object);
         }
 
@@ -52,264 +66,137 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
         public async Task LinkingOnInsert_WhenHasThreeDataTypes_ShouldPublishMessageToQueue()
         {
             // Arrange
-            _mockRedisService
-                .Setup(r => r.HashExistAsync<string>(It.IsAny<string>(), _linkingService.FP4_REDIS_KEY))
-                .ReturnsAsync(true);
+            var fp4Json = JsonSerializer.Serialize(fp4MockData);
+            var fp5Json = JsonSerializer.Serialize(fp5MockData);
+            var transactionJson = JsonSerializer.Serialize(transactionMockData);
 
-            _mockRedisService
-                .Setup(r => r.HashGetAsync<string>(It.IsAny<string>(), _linkingService.FP4_REDIS_KEY))
-                .ReturnsAsync(JsonSerializer.Serialize(fp4MockData));
+            // Mock batch operations
+            var fp4Task = Task.FromResult<RedisValue>(fp4Json);
+            var fp5Task = Task.FromResult<RedisValue>(fp5Json);
+            var transactionTask = Task.FromResult<RedisValue>(transactionJson);
 
-            _mockRedisService
-                .Setup(r => r.HashExistAsync<string>(It.IsAny<string>(), _linkingService.FP5_REDIS_KEY))
-                .ReturnsAsync(true);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.FP4_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(fp4Task);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.FP5_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(fp5Task);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.TRANSACTION_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(transactionTask);
 
-            _mockRedisService
-                .Setup(r => r.HashGetAsync<string>(It.IsAny<string>(), _linkingService.FP5_REDIS_KEY))
-                .ReturnsAsync(JsonSerializer.Serialize(fp5MockData));
-
-            _mockRedisService
-                .Setup(r => r.HashExistAsync<string>(It.IsAny<string>(), _linkingService.TRANSACTION_REDIS_KEY))
-                .ReturnsAsync(true);
-
-            _mockRedisService
-               .Setup(r => r.HashGetAsync<string>(It.IsAny<string>(), _linkingService.TRANSACTION_REDIS_KEY))
-               .ReturnsAsync(JsonSerializer.Serialize(transactionMockData));
-
-            var expectedMessage = new MessageQueue
-            {
-                Account = transactionMockData.Account,
-                Device = new DeviceModel
-                {
-                    AcceptsTypes = transactionMockData.AcceptsTypes,
-                    DetecasAnalysis = transactionMockData.DetecasAnalysis,
-                    Di = transactionMockData.Di ?? transactionMockData.__di,
-                    Ip = transactionMockData.Ip,
-                    Url = transactionMockData.Url,
-                    Platform = transactionMockData.Platform,
-                    Screen = transactionMockData.Screen,
-                    TotalMinutes = (DateTimeOffset.UtcNow - DateTimeOffset.Now).TotalMinutes.ToString(CultureInfo.InvariantCulture),
-                    UserAgent = transactionMockData.UserAgent
-                },
-                Action = transactionMockData.Action,
-                ActionResult = transactionMockData.ActionResult,
-                Subscriber = transactionMockData.Subscriber,
-                SubscriberId = transactionMockData.SubscriberId,
-                IP = transactionMockData.Ip,
-                FakeIP = transactionMockData.FakeIp,
-                TransDate = transactionMockData.TransDate,
-                SubscriberDate = DateTimeOffset.Now,
-                Token = transactionMockData.Token,
-                Recaptcha = "",
-                SessionKey = transactionMockData.SessionKey,
-                BotD = transactionMockData.Bi,
-                FingerPrint = new APFingerprintModel
-                {
-                    Audio = fp4MockData.Audio,
-                    Browser = fp4MockData.Browser,
-                    Graphics = fp5MockData.Graphics,
-                    Hardware = fp4MockData.Hardware,
-                    Preferences = fp4MockData.Preferences
-                }
-            };
+            // Mock the HashDeleteAsync for cleanup
+            _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<string>(), It.IsAny<string[]>()))
+                .ReturnsAsync(3);
 
             // Act
-            await _linkingService.LinkingOnInsert("testSession");
+            var result = await _linkingService.LinkingOnInsert("testSession");
 
             // Assert
+            result.Should().BeTrue();
             _mockMassTransitProducer.Verify(m => m.SendAsync(It.IsAny<MessageQueue>(), It.IsAny<string>()), Times.Once);
+            _mockBatch.Verify(b => b.Execute(), Times.Once);
+            _mockRedisService.Verify(r => r.HashDeleteAsync("testSession",
+                It.Is<string[]>(keys => keys.Contains(_linkingService.FP4_REDIS_KEY) &&
+                                      keys.Contains(_linkingService.FP5_REDIS_KEY) &&
+                                      keys.Contains(_linkingService.TRANSACTION_REDIS_KEY))), Times.Once);
         }
 
         [Fact]
         public async Task LinkingOnInsert_WhenMissingFP4_ShouldSkip()
         {
             // Arrange
-            _mockRedisService
-                .Setup(r => r.HashExistAsync<string>(It.IsAny<string>(), _linkingService.FP5_REDIS_KEY))
-                .ReturnsAsync(true);
+            var fp5Json = JsonSerializer.Serialize(fp5MockData);
+            var transactionJson = JsonSerializer.Serialize(transactionMockData);
 
-            _mockRedisService
-                .Setup(r => r.HashGetAsync<APFingerprintModel>(It.IsAny<string>(), _linkingService.FP5_REDIS_KEY))
-                .ReturnsAsync(fp5MockData);
+            // Mock batch operations with missing FP4
+            var fp4Task = Task.FromResult<RedisValue>(RedisValue.Null);
+            var fp5Task = Task.FromResult<RedisValue>(fp5Json);
+            var transactionTask = Task.FromResult<RedisValue>(transactionJson);
 
-            _mockRedisService
-                .Setup(r => r.HashExistAsync<string>(It.IsAny<string>(), _linkingService.TRANSACTION_REDIS_KEY))
-                .ReturnsAsync(true);
-
-            _mockRedisService
-               .Setup(r => r.HashGetAsync<TransactionRequest>(It.IsAny<string>(), _linkingService.TRANSACTION_REDIS_KEY))
-               .ReturnsAsync(transactionMockData);
-
-            var expectedMessage = new MessageQueue
-            {
-                Account = transactionMockData.Account,
-                Device = new DeviceModel
-                {
-                    AcceptsTypes = transactionMockData.AcceptsTypes,
-                    DetecasAnalysis = transactionMockData.DetecasAnalysis,
-                    Di = transactionMockData.Di ?? transactionMockData.__di,
-                    Ip = transactionMockData.Ip,
-                    Url = transactionMockData.Url,
-                    Platform = transactionMockData.Platform,
-                    Screen = transactionMockData.Screen,
-                    TotalMinutes = (DateTimeOffset.UtcNow - DateTimeOffset.Now).TotalMinutes.ToString(CultureInfo.InvariantCulture),
-                    UserAgent = transactionMockData.UserAgent
-                },
-                Action = transactionMockData.Action,
-                ActionResult = transactionMockData.ActionResult,
-                Subscriber = transactionMockData.Subscriber,
-                SubscriberId = transactionMockData.SubscriberId,
-                IP = transactionMockData.Ip,
-                FakeIP = transactionMockData.FakeIp,
-                TransDate = transactionMockData.TransDate,
-                SubscriberDate = DateTimeOffset.Now,
-                Token = transactionMockData.Token,
-                Recaptcha = "",
-                SessionKey = transactionMockData.SessionKey,
-                BotD = transactionMockData.Bi,
-                FingerPrint = new APFingerprintModel
-                {
-                    Audio = fp4MockData.Audio,
-                    Browser = fp4MockData.Browser,
-                    Graphics = fp5MockData.Graphics,
-                    Hardware = fp4MockData.Hardware,
-                    Preferences = fp4MockData.Preferences
-                }
-            };
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.FP4_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(fp4Task);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.FP5_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(fp5Task);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.TRANSACTION_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(transactionTask);
 
             // Act
-            await _linkingService.LinkingOnInsert("testSession");
+            var result = await _linkingService.LinkingOnInsert("testSession");
 
             // Assert
+            result.Should().BeFalse();
             _mockMassTransitProducer.Verify(m => m.SendAsync(It.IsAny<MessageQueue>(), It.IsAny<string>()), Times.Never);
+            _mockBatch.Verify(b => b.Execute(), Times.Once);
         }
 
         [Fact]
         public async Task LinkingOnInsert_WhenMissingFP5_ShouldSkip()
         {
             // Arrange
-            _mockRedisService
-                .Setup(r => r.HashExistAsync<string>(It.IsAny<string>(), _linkingService.FP4_REDIS_KEY))
-                .ReturnsAsync(true);
+            var fp4Json = JsonSerializer.Serialize(fp4MockData);
+            var transactionJson = JsonSerializer.Serialize(transactionMockData);
 
-            _mockRedisService
-                .Setup(r => r.HashGetAsync<APFingerprintModel>(It.IsAny<string>(), _linkingService.FP4_REDIS_KEY))
-                .ReturnsAsync(fp4MockData);
+            // Mock batch operations with missing FP5
+            var fp4Task = Task.FromResult<RedisValue>(fp4Json);
+            var fp5Task = Task.FromResult<RedisValue>(RedisValue.Null);
+            var transactionTask = Task.FromResult<RedisValue>(transactionJson);
 
-            _mockRedisService
-                .Setup(r => r.HashExistAsync<string>(It.IsAny<string>(), _linkingService.TRANSACTION_REDIS_KEY))
-                .ReturnsAsync(true);
-
-            _mockRedisService
-               .Setup(r => r.HashGetAsync<TransactionRequest>(It.IsAny<string>(), _linkingService.TRANSACTION_REDIS_KEY))
-               .ReturnsAsync(transactionMockData);
-
-            var expectedMessage = new MessageQueue
-            {
-                Account = transactionMockData.Account,
-                Device = new DeviceModel
-                {
-                    AcceptsTypes = transactionMockData.AcceptsTypes,
-                    DetecasAnalysis = transactionMockData.DetecasAnalysis,
-                    Di = transactionMockData.Di ?? transactionMockData.__di,
-                    Ip = transactionMockData.Ip,
-                    Url = transactionMockData.Url,
-                    Platform = transactionMockData.Platform,
-                    Screen = transactionMockData.Screen,
-                    TotalMinutes = (DateTimeOffset.UtcNow - DateTimeOffset.Now).TotalMinutes.ToString(CultureInfo.InvariantCulture),
-                    UserAgent = transactionMockData.UserAgent
-                },
-                Action = transactionMockData.Action,
-                ActionResult = transactionMockData.ActionResult,
-                Subscriber = transactionMockData.Subscriber,
-                SubscriberId = transactionMockData.SubscriberId,
-                IP = transactionMockData.Ip,
-                FakeIP = transactionMockData.FakeIp,
-                TransDate = transactionMockData.TransDate,
-                SubscriberDate = DateTimeOffset.Now,
-                Token = transactionMockData.Token,
-                Recaptcha = "",
-                SessionKey = transactionMockData.SessionKey,
-                BotD = transactionMockData.Bi,
-                FingerPrint = new APFingerprintModel
-                {
-                    Audio = fp4MockData.Audio,
-                    Browser = fp4MockData.Browser,
-                    Graphics = fp5MockData.Graphics,
-                    Hardware = fp4MockData.Hardware,
-                    Preferences = fp4MockData.Preferences
-                }
-            };
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.FP4_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(fp4Task);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.FP5_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(fp5Task);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.TRANSACTION_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(transactionTask);
 
             // Act
-            await _linkingService.LinkingOnInsert("testSession");
+            var result = await _linkingService.LinkingOnInsert("testSession");
 
             // Assert
+            result.Should().BeFalse();
             _mockMassTransitProducer.Verify(m => m.SendAsync(It.IsAny<MessageQueue>(), It.IsAny<string>()), Times.Never);
+            _mockBatch.Verify(b => b.Execute(), Times.Once);
         }
 
         [Fact]
         public async Task LinkingOnInsert_WhenMissingTransaction_ShouldSkip()
         {
             // Arrange
-            _mockRedisService
-                .Setup(r => r.HashExistAsync<string>(It.IsAny<string>(), _linkingService.FP4_REDIS_KEY))
-                .ReturnsAsync(true);
+            var fp4Json = JsonSerializer.Serialize(fp4MockData);
+            var fp5Json = JsonSerializer.Serialize(fp5MockData);
 
-            _mockRedisService
-                .Setup(r => r.HashGetAsync<APFingerprintModel>(It.IsAny<string>(), _linkingService.FP4_REDIS_KEY))
-                .ReturnsAsync(fp4MockData);
+            // Mock batch operations with missing Transaction
+            var fp4Task = Task.FromResult<RedisValue>(fp4Json);
+            var fp5Task = Task.FromResult<RedisValue>(fp5Json);
+            var transactionTask = Task.FromResult<RedisValue>(RedisValue.Null);
 
-            _mockRedisService
-                .Setup(r => r.HashExistAsync<string>(It.IsAny<string>(), _linkingService.FP5_REDIS_KEY))
-                .ReturnsAsync(true);
-
-            _mockRedisService
-                .Setup(r => r.HashGetAsync<APFingerprintModel>(It.IsAny<string>(), _linkingService.FP5_REDIS_KEY))
-                .ReturnsAsync(fp5MockData);
-
-            var expectedMessage = new MessageQueue
-            {
-                Account = transactionMockData.Account,
-                Device = new DeviceModel
-                {
-                    AcceptsTypes = transactionMockData.AcceptsTypes,
-                    DetecasAnalysis = transactionMockData.DetecasAnalysis,
-                    Di = transactionMockData.Di ?? transactionMockData.__di,
-                    Ip = transactionMockData.Ip,
-                    Url = transactionMockData.Url,
-                    Platform = transactionMockData.Platform,
-                    Screen = transactionMockData.Screen,
-                    TotalMinutes = (DateTimeOffset.UtcNow - DateTimeOffset.Now).TotalMinutes.ToString(CultureInfo.InvariantCulture),
-                    UserAgent = transactionMockData.UserAgent
-                },
-                Action = transactionMockData.Action,
-                ActionResult = transactionMockData.ActionResult,
-                Subscriber = transactionMockData.Subscriber,
-                SubscriberId = transactionMockData.SubscriberId,
-                IP = transactionMockData.Ip,
-                FakeIP = transactionMockData.FakeIp,
-                TransDate = transactionMockData.TransDate,
-                SubscriberDate = DateTimeOffset.Now,
-                Token = transactionMockData.Token,
-                Recaptcha = "",
-                SessionKey = transactionMockData.SessionKey,
-                BotD = transactionMockData.Bi,
-                FingerPrint = new APFingerprintModel
-                {
-                    Audio = fp4MockData.Audio,
-                    Browser = fp4MockData.Browser,
-                    Graphics = fp5MockData.Graphics,
-                    Hardware = fp4MockData.Hardware,
-                    Preferences = fp4MockData.Preferences
-                }
-            };
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.FP4_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(fp4Task);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.FP5_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(fp5Task);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.TRANSACTION_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(transactionTask);
 
             // Act
-            await _linkingService.LinkingOnInsert("testSession");
+            var result = await _linkingService.LinkingOnInsert("testSession");
 
             // Assert
+            result.Should().BeFalse();
             _mockMassTransitProducer.Verify(m => m.SendAsync(It.IsAny<MessageQueue>(), It.IsAny<string>()), Times.Never);
+            _mockBatch.Verify(b => b.Execute(), Times.Once);
+        }
+
+        [Fact]
+        public async Task LinkingOnInsert_WhenExceptionOccurs_ShouldLogErrorAndRethrow()
+        {
+            // Arrange
+            _mockDatabase.Setup(d => d.CreateBatch(It.IsAny<object>()))
+                .Throws(new RedisConnectionException(ConnectionFailureType.SocketClosed, "Connection lost"));
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<RedisConnectionException>(() =>
+                _linkingService.LinkingOnInsert("testSession"));
+
+            _mockLogger.Verify(
+                l => l.ErrorAsync(It.IsAny<string>(), It.IsAny<Exception>()),
+                Times.Once);
         }
 
         [Fact]
@@ -401,6 +288,110 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             actual.FingerPrint.Should().BeEquivalentTo(expected);
             actual.Account.Should().BeEquivalentTo(transactionMockData.Account);
             actual.Device.Di.Should().BeEquivalentTo(transactionMockData.Di);
+        }
+
+        [Fact]
+        public async Task LinkingOnExpired_WhenTransactionExists_ShouldPublishMessageToQueue()
+        {
+            // Arrange
+            var fp4Json = JsonSerializer.Serialize(fp4MockData);
+            var fp5Json = JsonSerializer.Serialize(fp5MockData);
+            var transactionJson = JsonSerializer.Serialize(transactionMockData);
+
+            // Mock batch operations
+            var fp4Task = Task.FromResult<RedisValue>(fp4Json);
+            var fp5Task = Task.FromResult<RedisValue>(fp5Json);
+            var transactionTask = Task.FromResult<RedisValue>(transactionJson);
+
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.FP4_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(fp4Task);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.FP5_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(fp5Task);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.TRANSACTION_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(transactionTask);
+
+            // Mock the HashDeleteAsync for cleanup
+            _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<string>(), It.IsAny<string[]>()))
+                .ReturnsAsync(3);
+
+            // Act
+            var result = await _linkingService.LinkingOnExpired("testSession_shadow");
+
+            // Assert
+            result.Should().BeTrue();
+            _mockMassTransitProducer.Verify(m => m.SendAsync(It.IsAny<MessageQueue>(), It.IsAny<string>()), Times.Once);
+            _mockBatch.Verify(b => b.Execute(), Times.Once);
+            _mockRedisService.Verify(r => r.HashDeleteAsync("testSession",
+                It.Is<string[]>(keys => keys.Contains(_linkingService.FP4_REDIS_KEY) &&
+                                      keys.Contains(_linkingService.FP5_REDIS_KEY) &&
+                                      keys.Contains(_linkingService.TRANSACTION_REDIS_KEY))), Times.Once);
+        }
+
+        [Fact]
+        public async Task LinkingOnExpired_WhenTransactionMissing_ShouldDeleteAndReturnFalse()
+        {
+            // Arrange
+            var fp4Json = JsonSerializer.Serialize(fp4MockData);
+            var fp5Json = JsonSerializer.Serialize(fp5MockData);
+
+            // Mock batch operations with missing Transaction
+            var fp4Task = Task.FromResult<RedisValue>(fp4Json);
+            var fp5Task = Task.FromResult<RedisValue>(fp5Json);
+            var transactionTask = Task.FromResult<RedisValue>(RedisValue.Null);
+
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.FP4_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(fp4Task);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.FP5_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(fp5Task);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.TRANSACTION_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(transactionTask);
+
+            // Mock the HashDeleteAsync for cleanup
+            _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<string>(), It.IsAny<string[]>()))
+                .ReturnsAsync(3);
+
+            // Act
+            var result = await _linkingService.LinkingOnExpired("testSession_shadow");
+
+            // Assert
+            result.Should().BeFalse();
+            _mockMassTransitProducer.Verify(m => m.SendAsync(It.IsAny<MessageQueue>(), It.IsAny<string>()), Times.Never);
+            _mockBatch.Verify(b => b.Execute(), Times.Once);
+            _mockRedisService.Verify(r => r.HashDeleteAsync("testSession",
+                It.Is<string[]>(keys => keys.Contains(_linkingService.FP4_REDIS_KEY) &&
+                                      keys.Contains(_linkingService.FP5_REDIS_KEY) &&
+                                      keys.Contains(_linkingService.TRANSACTION_REDIS_KEY))), Times.Once);
+        }
+
+        [Fact]
+        public async Task LinkingOnExpired_WhenMissingFingerprints_ShouldStillPublishMessage()
+        {
+            // Arrange
+            var transactionJson = JsonSerializer.Serialize(transactionMockData);
+
+            // Mock batch operations with missing fingerprints but transaction exists
+            var fp4Task = Task.FromResult<RedisValue>(RedisValue.Null);
+            var fp5Task = Task.FromResult<RedisValue>(RedisValue.Null);
+            var transactionTask = Task.FromResult<RedisValue>(transactionJson);
+
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.FP4_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(fp4Task);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.FP5_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(fp5Task);
+            _mockBatch.Setup(b => b.HashGetAsync(It.IsAny<RedisKey>(), _linkingService.TRANSACTION_REDIS_KEY, It.IsAny<CommandFlags>()))
+                .Returns(transactionTask);
+
+            // Mock the HashDeleteAsync for cleanup
+            _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<string>(), It.IsAny<string[]>()))
+                .ReturnsAsync(3);
+
+            // Act
+            var result = await _linkingService.LinkingOnExpired("testSession_shadow");
+
+            // Assert
+            result.Should().BeTrue();
+            _mockMassTransitProducer.Verify(m => m.SendAsync(It.IsAny<MessageQueue>(), It.IsAny<string>()), Times.Once);
+            _mockBatch.Verify(b => b.Execute(), Times.Once);
         }
     }
 }

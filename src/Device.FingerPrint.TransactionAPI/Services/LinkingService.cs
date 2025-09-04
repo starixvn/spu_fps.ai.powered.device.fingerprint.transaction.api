@@ -12,6 +12,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
         string TRANSACTION_REDIS_KEY { get; }
 
         Task<bool> LinkingOnInsert(string sessionKey);
+        Task<bool> LinkingOnExpired(string sessionKey);
 
         Task InsertFingerprint(string sessionKey, string key, APFingerprintModel fingerprint);
         Task InsertTransaction(string sessionKey, TransactionRequest transaction);
@@ -38,9 +39,6 @@ namespace Device.FingerPrint.TransactionAPI.Services
             _appSettings = appSettings;
             _redisService = redisService;
             _massTransitProducer = massTransitProducer;
-
-            var channel = $"__keyevent@{_appSettings.RedisDefaultDatabase}__:expired";
-            _redisService.RedisDatabase.SubscribeAsync<string>(channel, LinkingOnExpired);
         }
 
         public async Task InsertFingerprint(string sessionKey, string key, APFingerprintModel fingerprint)

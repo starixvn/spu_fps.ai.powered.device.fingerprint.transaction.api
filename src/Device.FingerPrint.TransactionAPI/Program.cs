@@ -37,10 +37,8 @@ builder.Configuration.AddEnvironmentVariables();
 var configuration = builder.Configuration;
 var services = builder.Services;
 
-var appSettings = new AppSettings(configuration);
-services.AddSingleton<IAppSettings>(appSettings);
-var gatewaySetting = new GatewaySetting(configuration);
-services.AddSingleton<IGatewaySetting>(gatewaySetting);
+builder.Services.AddSingleton<IAppSettings, AppSettings>();
+builder.Services.AddSingleton<IGatewaySetting, GatewaySetting>();
 
 RegisterServiceStatic(services, configuration);
 RegisterRedisStatic(services, configuration);
@@ -54,6 +52,16 @@ builder.Services.AddCors(p => p.AddPolicy("corsapp", builder =>
 }));
 
 
+
+builder.Services.AddControllers();
+builder.Services.AddHealthChecks();
+builder.Services.AddHttpClient();
+
+var app = builder.Build();
+
+var appSettings = app.Services.GetRequiredService<IAppSettings>();
+var gatewaySetting = app.Services.GetRequiredService<IGatewaySetting>();
+
 LogManager.SetDefaultLogCategory("FPS-API")
            .Use(
            [
@@ -63,11 +71,12 @@ LogManager.SetDefaultLogCategory("FPS-API")
                     })
            ]);
 
-builder.Services.AddControllers();
-builder.Services.AddHealthChecks();
-builder.Services.AddHttpClient();
+var redisService = app.Services.GetRequiredService<IRedisService>();
+var linkingService = app.Services.GetRequiredService<ILinkingService>();
+redisService.RedisDatabase.Database.Execute("CONFIG", "SET", "notify-keyspace-events", "Ex");
 
-var app = builder.Build();
+var channel = $"__keyevent@{appSettings.RedisDefaultDatabase}__:expired";
+redisService.RedisDatabase.SubscribeAsync<string>(channel, linkingService.LinkingOnExpired);
 
 app.UseSwagger();
 app.UseSwaggerUI();
