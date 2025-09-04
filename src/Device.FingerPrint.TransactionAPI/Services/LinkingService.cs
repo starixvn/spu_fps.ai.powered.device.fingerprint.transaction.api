@@ -1,4 +1,5 @@
-﻿using Device.FingerPrint.TransactionAPI.Model;
+﻿using Device.FingerPrint.TransactionAPI.Helpers;
+using Device.FingerPrint.TransactionAPI.Model;
 using Device.FingerPrint.TransactionAPI.Queue;
 using System.Globalization;
 using System.Text.Json;
@@ -193,13 +194,13 @@ namespace Device.FingerPrint.TransactionAPI.Services
                     continue;
                 }
 
-                fingerprintModel.Audio ??= fingerprint.Audio;
-                fingerprintModel.Browser ??= fingerprint.Browser;
-                fingerprintModel.Graphics ??= fingerprint.Graphics;
-                fingerprintModel.Hardware ??= fingerprint.Hardware;
-                fingerprintModel.Preferences ??= fingerprint.Preferences;
+                fingerprintModel.Audio ??= Encoder.Base64Decode(fingerprint.Audio);
+                fingerprintModel.Browser ??= Encoder.Base64Decode(fingerprint.Browser);
+                fingerprintModel.Graphics ??= Encoder.Base64Decode(fingerprint.Graphics);
+                fingerprintModel.Hardware ??= Encoder.Base64Decode(fingerprint.Hardware);
+                fingerprintModel.Preferences ??= Encoder.Base64Decode(fingerprint.Preferences);
             }
-               
+            
             return fingerprintModel;
         }
 
