@@ -42,6 +42,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
         public RedisService(IRedisClient redisClient, ILogger<RedisService> logger)
         {
             redisDatabase = redisClient.GetDefaultDatabase();
+            redisDatabase.Database.Execute("CONFIG", "SET", "notify-keyspace-events", "Ex");
             redisJSChallengeDatabase = redisClient.GetDb(REDIS_JSCHALLENGE_DATABASE);
             _logger = logger;
         }

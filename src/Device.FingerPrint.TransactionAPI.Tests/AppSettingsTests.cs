@@ -43,6 +43,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests
             appSettings.FPJSPortialAPI.Should().Be("https://fpjs.test.com");
             appSettings.JWTPassword.Should().Be("testpassword");
             appSettings.JWTEnable.Should().BeTrue();
+            appSettings.RedisDefaultDatabase.Should().Be(14);
         }
 
         [Fact]
@@ -408,6 +409,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests
             _configurationData["FPJS-Portial-API"] = "https://fpjs.test.com";
             _configurationData["JWT:Password"] = "testpassword";
             _configurationData["JWT:Enable"] = "true";
+            _configurationData["Redis:Database"] = "14";
         }
 
         #endregion

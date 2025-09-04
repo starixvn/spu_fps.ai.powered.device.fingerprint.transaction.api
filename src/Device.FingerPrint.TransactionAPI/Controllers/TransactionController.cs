@@ -94,7 +94,6 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 }
 
                 await linkingService.InsertTransaction(request.SessionKey, request);
-                await linkingService.LinkingOnInsert(request.SessionKey);
 
                 return Ok("Ok");
             }

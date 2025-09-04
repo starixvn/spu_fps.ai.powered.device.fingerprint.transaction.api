@@ -22,8 +22,6 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             {
                 await _linkingService.InsertFingerprint(request.SessionKey, _linkingService.FP4_REDIS_KEY, request.Fingerprint);
 
-                await _linkingService.LinkingOnInsert(request.SessionKey);
-
                 return Ok($"{request.SessionKey}");
             }
             catch (Exception ex)
@@ -39,8 +37,6 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             try
             {
                 await _linkingService.InsertFingerprint(request.SessionKey, _linkingService.FP5_REDIS_KEY, request.Fingerprint);
-
-                await _linkingService.LinkingOnInsert(request.SessionKey);
 
                 return Ok($"{request.SessionKey}");
             }
