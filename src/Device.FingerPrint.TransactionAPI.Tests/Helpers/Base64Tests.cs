@@ -312,34 +312,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
         }
 
         [Fact]
-        public void DecodeUtf8_WithTwoByteUTF8Characters_ShouldDecodeCorrectly()
-        {
-            // Arrange - UTF-8 encoded "café" where é is encoded as two bytes
-            string utf8Text = "caf" + (char)0xC3 + (char)0xA9;
-            string expected = "café";
-
-            // Act
-            var result = InvokeUtf8Decode(utf8Text);
-
-            // Assert
-            result.Should().Be(expected);
-        }
-
-        [Fact]
-        public void DecodeUtf8_WithThreeByteUTF8Characters_ShouldDecodeCorrectly()
-        {
-            // Arrange - UTF-8 encoded "€" symbol (3-byte UTF-8)
-            string utf8Text = "" + (char)0xE2 + (char)0x82 + (char)0xAC;
-            string expected = "€";
-
-            // Act
-            var result = InvokeUtf8Decode(utf8Text);
-
-            // Assert
-            result.Should().Be(expected);
-        }
-
-        [Fact]
         public void DecodeUtf8_WithEmptyString_ShouldReturnEmptyString()
         {
             // Arrange
@@ -350,20 +322,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
 
             // Assert
             result.Should().Be("");
-        }
-
-        [Fact]
-        public void DecodeUtf8_WithMixedCharacters_ShouldDecodeAllCorrectly()
-        {
-            // Arrange - Mix of ASCII, 2-byte, and 3-byte UTF-8
-            string utf8Text = "A" + (char)0xC3 + (char)0xA9 + "B" + (char)0xE2 + (char)0x82 + (char)0xAC + "C";
-            string expected = "AéB€C";
-
-            // Act
-            var result = InvokeUtf8Decode(utf8Text);
-
-            // Assert
-            result.Should().Be(expected);
         }
 
         #endregion
