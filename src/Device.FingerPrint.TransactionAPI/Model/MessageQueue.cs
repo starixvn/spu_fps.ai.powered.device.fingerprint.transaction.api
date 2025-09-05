@@ -33,6 +33,6 @@
 
         public MobileModel? Mobile { get; set; }
 
-        public APFingerprintModel? FingerPrint { get; set; }
+        public APFingerprintModel? Fingerprint { get; set; }
     }
 }

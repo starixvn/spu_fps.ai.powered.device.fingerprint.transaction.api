@@ -241,7 +241,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 Recaptcha = "",
                 SessionKey = transactionRequest.SessionKey,
                 BotD = transactionRequest.Bi,
-                FingerPrint = LinkFingerprintsAttributes([fingerprint4, fingerprint5])
+                Fingerprint = LinkFingerprintsAttributes([fingerprint4, fingerprint5])
             };
 
         }

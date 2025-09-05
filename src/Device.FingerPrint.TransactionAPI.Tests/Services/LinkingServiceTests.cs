@@ -288,7 +288,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
 
             // Assert
             actual.Should().NotBeNull();
-            actual.FingerPrint.Should().BeEquivalentTo(expected);
+            actual.Fingerprint.Should().BeEquivalentTo(expected);
             actual.Account.Should().BeEquivalentTo(transactionMockData.Account);
             actual.Device.Di.Should().BeEquivalentTo(transactionMockData.Di);
         }
