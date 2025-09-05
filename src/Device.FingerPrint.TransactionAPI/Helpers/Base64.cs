@@ -22,10 +22,12 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
         private const int BitMask63 = 63;
         private const int BitMask3 = 3;
 
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(1000);
+
         // Compiled regex patterns for better performance
-        private static readonly Regex InvalidCharsRegex = new(@"[^A-Za-z0-9\+\/\=]", RegexOptions.Compiled);
-        private static readonly Regex ValidBase64Pattern = new(@"^[A-Za-z0-9+/]*={0,2}$", RegexOptions.Compiled);
-        private static readonly Regex Base64CharPattern = new(@"[A-Za-z0-9+/=]", RegexOptions.Compiled);
+        private static readonly Regex InvalidCharsRegex = new(@"[^A-Za-z0-9\+\/\=]", RegexOptions.Compiled, RegexTimeout);
+        private static readonly Regex ValidBase64Pattern = new(@"^[A-Za-z0-9+/]*={0,2}$", RegexOptions.Compiled, RegexTimeout);
+        private static readonly Regex Base64CharPattern = new(@"[A-Za-z0-9+/=]", RegexOptions.Compiled, RegexTimeout);
 
         /// <summary>
         /// Decodes a Base64 encoded string using standard Base64 decoding.
