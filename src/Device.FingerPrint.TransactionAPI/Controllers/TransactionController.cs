@@ -1,5 +1,4 @@
 ﻿using Device.FingerPrint.TransactionAPI.Model;
-using Device.FingerPrint.TransactionAPI.Queue;
 using Device.FingerPrint.TransactionAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using ONEbook.UM.Models;

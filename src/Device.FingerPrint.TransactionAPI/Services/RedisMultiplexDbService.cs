@@ -1,8 +1,6 @@
 ﻿using Device.FingerPrint.TransactionAPI.Model;
 using Newtonsoft.Json;
 using StackExchange.Redis;
-using StackExchange.Redis.Extensions.Core.Abstractions;
-using StackExchange.Redis.Extensions.Core.Implementations;
 
 namespace Device.FingerPrint.TransactionAPI.Services
 {
@@ -36,7 +34,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
     public class RedisMultiplexDbService : IRedisMultiplexDbService
     {
-        private static int _nextDbIndex = 0;
+        private static int _nextDbIndex;
         private readonly IConnectionMultiplexer _connectionMultiplexer;
         private readonly RedisSettings _redisSettings;
 

@@ -4,7 +4,6 @@ using Device.FingerPrint.TransactionAPI.Services;
 using FluentAssertions;
 using Moq;
 using StackExchange.Redis;
-using StackExchange.Redis.Extensions.Core.Abstractions;
 using System.Text.Json;
 using Xunit;
 

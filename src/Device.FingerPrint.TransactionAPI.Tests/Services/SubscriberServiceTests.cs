@@ -1,6 +1,5 @@
 using Device.FingerPrint.TransactionAPI.Model;
 using Device.FingerPrint.TransactionAPI.Services;
-using Fanex.Logging;
 using FluentAssertions;
 using Moq;
 using Moq.Protected;
