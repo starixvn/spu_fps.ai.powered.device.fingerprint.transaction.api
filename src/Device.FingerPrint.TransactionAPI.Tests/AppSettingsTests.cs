@@ -43,7 +43,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests
             appSettings.FPJSPortialAPI.Should().Be("https://fpjs.test.com");
             appSettings.JWTPassword.Should().Be("testpassword");
             appSettings.JWTEnable.Should().BeTrue();
-            appSettings.RedisDefaultDatabase.Should().Be(14);
         }
 
         [Fact]

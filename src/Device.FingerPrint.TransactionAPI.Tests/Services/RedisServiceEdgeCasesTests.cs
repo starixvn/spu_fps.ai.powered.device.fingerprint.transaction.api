@@ -12,22 +12,28 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
     {
         private readonly Mock<IRedisClient> _mockRedisClient;
         private readonly Mock<IRedisDatabase> _mockRedisDatabase;
-        private readonly Mock<IRedisDatabase> _mockRedisJSChallengeDatabase;
-        private readonly Mock<ILogger<RedisService>> _mockLogger;
+        private readonly Mock<IRedisDatabase> _mockRedisShadowDatabase;
+        private readonly Mock<IAppSettings> _mockAppSettings;
+        private readonly Mock<ILogger> _mockLogger;
         private readonly RedisService _redisService;
 
         public RedisServiceEdgeCasesTests()
         {
             _mockRedisClient = new Mock<IRedisClient>();
             _mockRedisDatabase = new Mock<IRedisDatabase>();
-            _mockRedisJSChallengeDatabase = new Mock<IRedisDatabase>();
-            _mockLogger = new Mock<ILogger<RedisService>>();
+            _mockRedisShadowDatabase = new Mock<IRedisDatabase>();
+            _mockAppSettings = new Mock<IAppSettings>();
+            _mockLogger = new Mock<ILogger>();
 
             _mockRedisClient.Setup(x => x.GetDefaultDatabase()).Returns(_mockRedisDatabase.Object);
             // Use It.IsAny with correct string type for the second parameter
-            _mockRedisClient.Setup(x => x.GetDb(It.IsAny<int>(), It.IsAny<string>())).Returns(_mockRedisJSChallengeDatabase.Object);
-
-            _redisService = new RedisService(_mockRedisClient.Object, _mockLogger.Object);
+            _mockRedisClient.Setup(x => x.GetDb(It.IsAny<int>(), It.IsAny<string>())).Returns(_mockRedisShadowDatabase.Object);
+            _mockAppSettings.Setup(x => x.RedisSettings).Returns(new TransactionAPI.Model.RedisSettings
+            {
+                MaxRetryAttempts = 3,
+                ShadowDatabase = 1
+            });
+            _redisService = new RedisService(_mockAppSettings.Object, _mockRedisClient.Object, _mockLogger.Object);
         }
 
         #region Null and Empty String Handling

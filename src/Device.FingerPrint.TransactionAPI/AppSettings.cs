@@ -83,7 +83,10 @@ namespace Device.FingerPrint.TransactionAPI
         public T GetSection<T>(string key)
         {
             var section = configuration.GetSection(key);
-
+            if(section == null)
+            {
+                return default;
+            }
             return section.Get<T>();
         }
     }
