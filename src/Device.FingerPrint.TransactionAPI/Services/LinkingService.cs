@@ -196,7 +196,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
                 fingerprintModel.Audio ??= fingerprint.Audio;
                 fingerprintModel.Browser ??= fingerprint.Browser;
-                fingerprintModel.Graphics ??= fingerprint.Graphics;
+                fingerprintModel.Graphic ??= fingerprint.Graphic;
                 fingerprintModel.Hardware ??= fingerprint.Hardware;
                 fingerprintModel.Preferences ??= fingerprint.Preferences;
             }

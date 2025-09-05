@@ -17,6 +17,6 @@ namespace Device.FingerPrint.TransactionAPI.Model
         public string? Preferences { get; set; }
 
         [JsonPropertyName("gp")]
-        public string? Graphics { get; set; }
+        public string? Graphic { get; set; }
     }
 }

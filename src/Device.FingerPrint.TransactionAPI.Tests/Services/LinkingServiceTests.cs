@@ -32,7 +32,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
 
         private readonly APFingerprintModel fp5MockData = new APFingerprintModel()
         {
-            Graphics = "GraphicsData",
+            Graphic = "GraphicData",
         };
 
         private readonly TransactionRequest transactionMockData = new TransactionRequest()
@@ -205,7 +205,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             {
                 Audio = fp4MockData.Audio,
                 Browser = fp4MockData.Browser,
-                Graphics = fp5MockData.Graphics,
+                Graphic = fp5MockData.Graphic,
                 Hardware = fp4MockData.Hardware,
                 Preferences = fp4MockData.Preferences
             };
@@ -242,7 +242,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             // Arrange
             var expected = new APFingerprintModel
             {
-                Graphics = fp5MockData.Graphics,
+                Graphic = fp5MockData.Graphic,
             };
 
             // Act
@@ -273,7 +273,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             {
                 Audio = fp4MockData.Audio,
                 Browser = fp4MockData.Browser,
-                Graphics = fp5MockData.Graphics,
+                Graphic = fp5MockData.Graphic,
                 Hardware = fp4MockData.Hardware,
                 Preferences = fp4MockData.Preferences
             };
