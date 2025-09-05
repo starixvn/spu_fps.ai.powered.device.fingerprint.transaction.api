@@ -262,23 +262,7 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
             return index + 3;
         }
 
-        /// <summary>
-        /// Validates and cleans the encoded data by removing invalid characters.
-        /// </summary>
-        /// <param name="encodedData">The encoded data to validate and clean.</param>
-        /// <returns>The cleaned encoded data.</returns>
-        private static string ValidateAndCleanEncodedData(string encodedData)
-        {
-            ArgumentNullException.ThrowIfNull(encodedData);
-
-            if (!ValidBase64Pattern.IsMatch(encodedData))
-            {
-                return TruncateAtFirstInvalidCharacter(encodedData);
-            }
-
-            return encodedData;
-        }
-
+  
         /// <summary>
         /// Truncates the string at the first invalid Base64 character.
         /// </summary>
