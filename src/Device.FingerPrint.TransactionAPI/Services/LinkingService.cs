@@ -29,6 +29,8 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         private const int FINGERPRINT_TTL_IN_SECONDS = 3 * 60 * 60;
 
+        private const string BASE64_KEY = "wFKfVDGZqRbyYCBi6IveMaQAh1ntWcP8ujT/U7r2xXs+J0L=4d3zEHSo5glN9kOpm";
+
         private readonly ILogger _logger;
         private readonly IAppSettings _appSettings;
         private readonly IRedisService _redisService;
@@ -194,11 +196,11 @@ namespace Device.FingerPrint.TransactionAPI.Services
                     continue;
                 }
 
-                fingerprintModel.Audio ??= Encoder.Base64Decode(fingerprint.Audio);
-                fingerprintModel.Browser ??= Encoder.Base64Decode(fingerprint.Browser);
-                fingerprintModel.Graphics ??= Encoder.Base64Decode(fingerprint.Graphics);
-                fingerprintModel.Hardware ??= Encoder.Base64Decode(fingerprint.Hardware);
-                fingerprintModel.Preferences ??= Encoder.Base64Decode(fingerprint.Preferences);
+                fingerprintModel.Audio ??= Base64.Decode(fingerprint.Audio, BASE64_KEY);
+                fingerprintModel.Browser ??= Base64.Decode(fingerprint.Browser, BASE64_KEY);
+                fingerprintModel.Graphics ??= Base64.Decode(fingerprint.Graphics, BASE64_KEY);
+                fingerprintModel.Hardware ??= Base64.Decode(fingerprint.Hardware, BASE64_KEY);
+                fingerprintModel.Preferences ??= Base64.Decode(fingerprint.Preferences, BASE64_KEY);
             }
             
             return fingerprintModel;
