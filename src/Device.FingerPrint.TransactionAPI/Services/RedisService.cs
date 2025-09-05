@@ -1,5 +1,4 @@
 ﻿using Device.FingerPrint.TransactionAPI.Model;
-using MassTransit.Logging;
 using StackExchange.Redis;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
