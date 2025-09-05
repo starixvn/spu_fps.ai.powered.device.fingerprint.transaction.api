@@ -1,4 +1,6 @@
-﻿using StackExchange.Redis;
+﻿using Device.FingerPrint.TransactionAPI.Model;
+using MassTransit.Logging;
+using StackExchange.Redis;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace Device.FingerPrint.TransactionAPI.Services
@@ -7,7 +9,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
     {
         IRedisDatabase RedisDatabase { get; }
 
-        IRedisDatabase RedisJSChallengeDatabase { get; }
+        IRedisDatabase RedisShadowDatabase { get; }
 
         Task<T?> HashGetAsync<T>(string hashKey, string key);
 
@@ -33,26 +35,25 @@ namespace Device.FingerPrint.TransactionAPI.Services
     public class RedisService : IRedisService
     {
         private readonly IRedisDatabase redisDatabase;
-        private readonly IRedisDatabase redisJSChallengeDatabase;
-        private readonly ILogger<RedisService> _logger;
-        private readonly int REDIS_JSCHALLENGE_DATABASE = 10;
-        private readonly int MAX_RETRY_ATTEMPTS = 3;
-        private readonly int RETRY_DELAY_MS = 1000;
+        private readonly IRedisDatabase redisShadowDatabase;
+        private readonly ILogger _logger;
+        private readonly RedisSettings _redisSettings;
 
-        public RedisService(IRedisClient redisClient, ILogger<RedisService> logger)
+        public RedisService(IAppSettings appSettings, IRedisClient redisClient, ILogger logger)
         {
+            _redisSettings = appSettings.RedisSettings;
             redisDatabase = redisClient.GetDefaultDatabase();
-            redisJSChallengeDatabase = redisClient.GetDb(REDIS_JSCHALLENGE_DATABASE);
+            redisShadowDatabase = redisClient.GetDb(_redisSettings.ShadowDatabase);
             _logger = logger;
         }
 
         public IRedisDatabase RedisDatabase => redisDatabase;
 
-        public IRedisDatabase RedisJSChallengeDatabase => redisJSChallengeDatabase;
+        public IRedisDatabase RedisShadowDatabase => redisShadowDatabase;
 
         private async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> operation, string operationName)
         {
-            for (int attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++)
+            for (int attempt = 1; attempt <= _redisSettings.MaxRetryAttempts; attempt++)
             {
                 try
                 {
@@ -60,23 +61,23 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 }
                 catch (RedisConnectionException ex)
                 {
-                    _logger.LogWarning(ex, "Redis connection error on attempt {Attempt} for operation {Operation}", attempt, operationName);
+                    await _logger.WarnAsync( $"Redis connection error on attempt {attempt} for operation {operationName}", ex);
 
-                    if (attempt == MAX_RETRY_ATTEMPTS)
+                    if (attempt == _redisSettings.MaxRetryAttempts)
                     {
-                        _logger.LogError(ex, "Redis operation {Operation} failed after {MaxAttempts} attempts", operationName, MAX_RETRY_ATTEMPTS);
+                        await _logger.ErrorAsync($"Redis operation {operationName} failed after {_redisSettings.MaxRetryAttempts} attempts", ex);
                         throw;
                     }
 
-                    await Task.Delay(RETRY_DELAY_MS * attempt);
+                    await Task.Delay(_redisSettings.RetryDelayMs * attempt);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Unexpected error in Redis operation {Operation}", operationName);
+                    await _logger.ErrorAsync($"Unexpected error in Redis operation {operationName}", ex);
                     throw;
                 }
             }
-            throw new InvalidOperationException($"Redis {nameof(operationName)} {operationName} failed after {MAX_RETRY_ATTEMPTS} attempts");
+            throw new InvalidOperationException($"Redis {nameof(operationName)} {operationName} failed after {_redisSettings.MaxRetryAttempts} attempts");
         }
 
         public Task<bool> HashSetAsync<T>(string hashKey, string key, T value, bool isForceUpdate)

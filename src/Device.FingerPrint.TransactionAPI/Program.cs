@@ -74,7 +74,7 @@ var redisService = app.Services.GetRequiredService<IRedisService>();
 var linkingService = app.Services.GetRequiredService<ILinkingService>();
 redisService.RedisDatabase.Database.Execute("CONFIG", "SET", "notify-keyspace-events", "Ex");
 
-var channel = $"__keyevent@{appSettings.RedisDefaultDatabase}__:expired";
+var channel = $"__keyevent@{appSettings.RedisSettings.ShadowDatabase}__:expired";
 redisService.RedisDatabase.SubscribeAsync<string>(channel, linkingService.LinkingOnExpired);
 
 app.UseSwagger();

@@ -1,6 +1,7 @@
 ﻿using Device.FingerPrint.TransactionAPI.Helpers;
 using Device.FingerPrint.TransactionAPI.Model;
 using Device.FingerPrint.TransactionAPI.Queue;
+using StackExchange.Redis;
 using System.Globalization;
 using System.Text.Json;
 
@@ -59,7 +60,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             if(updateExpire)
             {
                 var expireAt = DateTimeOffset.Now.AddSeconds(FINGERPRINT_TTL_IN_SECONDS);
-                await _redisService.AddAsyncAndExpiryAsync(shaddowKey, "1", expireAt);
+                await _redisService.RedisShadowDatabase.AddAsync(shaddowKey, "1", expireAt, flag: CommandFlags.FireAndForget);
             }
 
             var fingerprintJson = JsonSerializer.Serialize(fingerprint);
@@ -81,7 +82,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             if (updateExpire)
             {
                 var expireAt = DateTimeOffset.Now.AddSeconds(TRANSACTION_TTL_IN_SECONDS);
-                await _redisService.AddAsyncAndExpiryAsync(shaddowKey, "1", expireAt);
+                await _redisService.RedisShadowDatabase.AddAsync(shaddowKey, "1", expireAt, flag: CommandFlags.FireAndForget);
             }
 
             var transactionJson = JsonSerializer.Serialize(transaction);
