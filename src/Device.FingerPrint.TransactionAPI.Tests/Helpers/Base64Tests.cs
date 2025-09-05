@@ -79,14 +79,16 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
         }
 
         [Fact]
-        public void Decode_WithPaddingOnly_ShouldHandleGracefully()
+        public void Decode_WithPaddingOnly_ShouldReturnNull()
         {
             // Arrange
             string input = "====";
 
-            // Act & Assert - This should throw an exception based on the current implementation
-            var exception = Assert.Throws<InvalidOperationException>(() => Base64.Decode(input));
-            exception.Should().NotBeNull();
+            // Act
+            var result = Base64.Decode(input);
+
+            // Assert - The refactored code returns null for invalid Base64
+            result.Should().BeNull();
         }
 
         [Fact]
@@ -214,17 +216,32 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
             string encodedData = "SGVsbG8=";
             string key = "";
 
-            // Act & Assert - This should throw an exception when key is empty
-            var exception = Assert.Throws<OverflowException>(() => Base64.Decode(encodedData, key));
+            // Act & Assert - This should throw ArgumentException when key is empty
+            var exception = Assert.Throws<ArgumentException>(() => Base64.Decode(encodedData, key));
             exception.Should().NotBeNull();
+            exception.ParamName.Should().Be("key");
+        }
+
+        [Fact]
+        public void Decode_WithKey_WithOnlyInvalidCharacters_ShouldReturnNull()
+        {
+            // Arrange
+            string encodedData = "!@#$%^&*()";
+            string key = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+
+            // Act
+            var result = Base64.Decode(encodedData, key);
+
+            // Assert - Should return null when all characters are invalid
+            result.Should().BeNull();
         }
 
         #endregion
 
-        #region ValidEncodedData Tests
+        #region ValidateAndCleanEncodedData Tests
 
         [Fact]
-        public void ValidEncodedData_WithValidBase64_ShouldReturnSameString()
+        public void ValidateAndCleanEncodedData_WithValidBase64_ShouldReturnSameString()
         {
             // Arrange
             string validBase64 = "SGVsbG8gV29ybGQh";
@@ -237,7 +254,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
         }
 
         [Fact]
-        public void ValidEncodedData_WithInvalidCharacters_ShouldTruncateAtFirstInvalid()
+        public void ValidateAndCleanEncodedData_WithInvalidCharacters_ShouldTruncateAtFirstInvalid()
         {
             // Arrange
             string invalidBase64 = "SGVsbG8!Invalid";
@@ -251,7 +268,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
         }
 
         [Fact]
-        public void ValidEncodedData_WithValidPadding_ShouldReturnSameString()
+        public void ValidateAndCleanEncodedData_WithValidPadding_ShouldReturnSameString()
         {
             // Arrange
             string validBase64WithPadding = "SGVsbG8=";
@@ -264,7 +281,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
         }
 
         [Fact]
-        public void ValidEncodedData_WithOnlyInvalidCharacters_ShouldReturnEmptyString()
+        public void ValidateAndCleanEncodedData_WithOnlyInvalidCharacters_ShouldReturnEmptyString()
         {
             // Arrange
             string invalidBase64 = "!@#$%^&*()";
@@ -272,16 +289,17 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
             // Act
             var result = InvokeValidEncodedData(invalidBase64);
 
-            // Assert
+            // Assert - ValidateAndCleanEncodedData still returns empty string, 
+            // but the main Decode method will convert this to null
             result.Should().Be("");
         }
 
         #endregion
 
-        #region Utf8Decode Tests
+        #region DecodeUtf8 Tests
 
         [Fact]
-        public void Utf8Decode_WithASCIICharacters_ShouldReturnSameString()
+        public void DecodeUtf8_WithASCIICharacters_ShouldReturnSameString()
         {
             // Arrange
             string asciiText = "Hello World";
@@ -294,7 +312,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
         }
 
         [Fact]
-        public void Utf8Decode_WithTwoByteUTF8Characters_ShouldDecodeCorrectly()
+        public void DecodeUtf8_WithTwoByteUTF8Characters_ShouldDecodeCorrectly()
         {
             // Arrange - UTF-8 encoded "café" where é is encoded as two bytes
             string utf8Text = "caf" + (char)0xC3 + (char)0xA9;
@@ -308,7 +326,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
         }
 
         [Fact]
-        public void Utf8Decode_WithThreeByteUTF8Characters_ShouldDecodeCorrectly()
+        public void DecodeUtf8_WithThreeByteUTF8Characters_ShouldDecodeCorrectly()
         {
             // Arrange - UTF-8 encoded "€" symbol (3-byte UTF-8)
             string utf8Text = "" + (char)0xE2 + (char)0x82 + (char)0xAC;
@@ -322,7 +340,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
         }
 
         [Fact]
-        public void Utf8Decode_WithEmptyString_ShouldReturnEmptyString()
+        public void DecodeUtf8_WithEmptyString_ShouldReturnEmptyString()
         {
             // Arrange
             string input = "";
@@ -335,7 +353,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
         }
 
         [Fact]
-        public void Utf8Decode_WithMixedCharacters_ShouldDecodeAllCorrectly()
+        public void DecodeUtf8_WithMixedCharacters_ShouldDecodeAllCorrectly()
         {
             // Arrange - Mix of ASCII, 2-byte, and 3-byte UTF-8
             string utf8Text = "A" + (char)0xC3 + (char)0xA9 + "B" + (char)0xE2 + (char)0x82 + (char)0xAC + "C";
@@ -403,14 +421,14 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
 
         private static string InvokeValidEncodedData(string input)
         {
-            var method = typeof(Base64).GetMethod("ValidEncodedData", 
+            var method = typeof(Base64).GetMethod("ValidateAndCleanEncodedData", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
             return (string)method!.Invoke(null, new object[] { input })!;
         }
 
         private static string InvokeUtf8Decode(string input)
         {
-            var method = typeof(Base64).GetMethod("Utf8Decode", 
+            var method = typeof(Base64).GetMethod("DecodeUtf8", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
             return (string)method!.Invoke(null, new object[] { input })!;
         }
