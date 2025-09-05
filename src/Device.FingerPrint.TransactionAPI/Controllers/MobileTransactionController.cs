@@ -47,28 +47,6 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             }
         }
 
-        [HttpPost("FPS/TestTransaction")]
-        public IActionResult TestTransaction(string testValue)
-        {
-            if (string.IsNullOrEmpty(testValue))
-            {
-                return BadRequest("Invalid test value");
-            }
-
-            try
-            {
-                logger.Info(testValue);
-
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex.Message, ex);
-
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
-        }
-
         [HttpPost("FPS/MobileTransaction/Base64")]
         public string MobileTransactionToBase64(MobileTransactionModel transaction)
         {

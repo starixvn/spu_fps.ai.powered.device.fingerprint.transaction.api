@@ -1,5 +1,4 @@
 using Device.FingerPrint.TransactionAPI;
-using Device.FingerPrint.TransactionAPI.JWT;
 using Device.FingerPrint.TransactionAPI.Middleware;
 using Device.FingerPrint.TransactionAPI.Queue;
 using Device.FingerPrint.TransactionAPI.Services;

@@ -15,8 +15,6 @@
 
         public string? FakeIP { get; set; }
 
-        public IpInfoModel? IpInfo { get; set; }
-
         public string? Subscriber { get; set; }
 
         public int SubscriberId { get; set; }
