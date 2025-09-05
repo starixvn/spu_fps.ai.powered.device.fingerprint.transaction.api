@@ -26,8 +26,6 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
 
         // Compiled regex patterns for better performance
         private static readonly Regex InvalidCharsRegex = new(@"[^A-Za-z0-9\+\/\=]", RegexOptions.Compiled, RegexTimeout);
-        private static readonly Regex ValidBase64Pattern = new(@"^[A-Za-z0-9+/]*={0,2}$", RegexOptions.Compiled, RegexTimeout);
-        private static readonly Regex Base64CharPattern = new(@"[A-Za-z0-9+/=]", RegexOptions.Compiled, RegexTimeout);
 
         private const string BASE64_KEY = "wFKfVDGZqRbyYCBi6IveMaQAh1ntWcP8ujT/U7r2xXs+J0L=4d3zEHSo5glN9kOpm";
 
@@ -260,25 +258,6 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
             
             result.Append(ConvertToChar(decodedChar));
             return index + 3;
-        }
-
-  
-        /// <summary>
-        /// Truncates the string at the first invalid Base64 character.
-        /// </summary>
-        /// <param name="encodedData">The encoded data to truncate.</param>
-        /// <returns>The truncated string containing only valid characters.</returns>
-        private static string TruncateAtFirstInvalidCharacter(string encodedData)
-        {
-            for (int i = 0; i < encodedData.Length; i++)
-            {
-                if (!Base64CharPattern.IsMatch(encodedData[i].ToString()))
-                {
-                    return encodedData[..i];
-                }
-            }
-
-            return encodedData;
         }
     }
 }
