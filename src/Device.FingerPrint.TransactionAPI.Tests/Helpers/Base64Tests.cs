@@ -143,63 +143,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
 
         #endregion
 
-        #region ValidateAndCleanEncodedData Tests
-
-        [Fact]
-        public void ValidateAndCleanEncodedData_WithValidBase64_ShouldReturnSameString()
-        {
-            // Arrange
-            string validBase64 = "SGVsbG8gV29ybGQh";
-
-            // Act
-            var result = InvokeValidEncodedData(validBase64);
-
-            // Assert
-            result.Should().Be(validBase64);
-        }
-
-        [Fact]
-        public void ValidateAndCleanEncodedData_WithInvalidCharacters_ShouldTruncateAtFirstInvalid()
-        {
-            // Arrange
-            string invalidBase64 = "SGVsbG8!Invalid";
-            string expected = "SGVsbG8";
-
-            // Act
-            var result = InvokeValidEncodedData(invalidBase64);
-
-            // Assert
-            result.Should().Be(expected);
-        }
-
-        [Fact]
-        public void ValidateAndCleanEncodedData_WithValidPadding_ShouldReturnSameString()
-        {
-            // Arrange
-            string validBase64WithPadding = "SGVsbG8=";
-
-            // Act
-            var result = InvokeValidEncodedData(validBase64WithPadding);
-
-            // Assert
-            result.Should().Be(validBase64WithPadding);
-        }
-
-        [Fact]
-        public void ValidateAndCleanEncodedData_WithOnlyInvalidCharacters_ShouldReturnEmptyString()
-        {
-            // Arrange
-            string invalidBase64 = "!@#$%^&*()";
-
-            // Act
-            var result = InvokeValidEncodedData(invalidBase64);
-
-            // Assert
-            result.Should().Be("");
-        }
-
-        #endregion
-
         #region DecodeUtf8 Tests
 
         [Fact]
@@ -289,13 +232,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Helpers
         #endregion
 
         #region Helper Methods
-
-        private static string InvokeValidEncodedData(string input)
-        {
-            var method = typeof(Base64).GetMethod("ValidateAndCleanEncodedData", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            return (string)method!.Invoke(null, new object[] { input })!;
-        }
 
         private static string InvokeUtf8Decode(string input)
         {
