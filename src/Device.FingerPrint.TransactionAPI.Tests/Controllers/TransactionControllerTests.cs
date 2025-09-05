@@ -8,7 +8,6 @@ using Moq;
 using ONEbook.UM.Models;
 using ONEbook.UM.Services;
 using Xunit;
-using Fanex.Logging;
 
 namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
 {

@@ -29,36 +29,7 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
         private static readonly Regex ValidBase64Pattern = new(@"^[A-Za-z0-9+/]*={0,2}$", RegexOptions.Compiled, RegexTimeout);
         private static readonly Regex Base64CharPattern = new(@"[A-Za-z0-9+/=]", RegexOptions.Compiled, RegexTimeout);
 
-        /// <summary>
-        /// Decodes a Base64 encoded string using standard Base64 decoding.
-        /// </summary>
-        /// <param name="encodedData">The Base64 encoded string to decode.</param>
-        /// <returns>The decoded string, or null if the input is null or empty.</returns>
-        public static string? Decode(string? encodedData)
-        {
-            if (string.IsNullOrEmpty(encodedData))
-            {
-                return null;
-            }
-
-            try
-            {
-                var validEncodedData = ValidateAndCleanEncodedData(encodedData);
-                if (string.IsNullOrEmpty(validEncodedData))
-                {
-                    return null; // Return null instead of empty string for consistency
-                }
-
-                var normalizedData = validEncodedData.Replace(" ", "+", StringComparison.Ordinal);
-                byte[] bytes = Convert.FromBase64String(normalizedData);
-                return Encoding.UTF8.GetString(bytes);
-            }
-            catch (FormatException)
-            {
-                // Return null for invalid Base64 format to maintain consistency
-                return null;
-            }
-        }
+        private const string BASE64_KEY = "wFKfVDGZqRbyYCBi6IveMaQAh1ntWcP8ujT/U7r2xXs+J0L=4d3zEHSo5glN9kOpm";
 
         /// <summary>
         /// Decodes a Base64 encoded string using a custom key for character mapping.
@@ -66,18 +37,11 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
         /// <param name="encodedData">The encoded string to decode.</param>
         /// <param name="key">The custom key used for character mapping.</param>
         /// <returns>The decoded string, or null if the input is null or empty.</returns>
-        public static string? Decode(string? encodedData, string key)
+        public static string? Decode(string? encodedData)
         {
             if (string.IsNullOrEmpty(encodedData))
             {
                 return null;
-            }
-
-            ArgumentNullException.ThrowIfNull(key);
-
-            if (string.IsNullOrEmpty(key))
-            {
-                throw new ArgumentException("Key cannot be empty.", nameof(key));
             }
 
             try
@@ -90,7 +54,7 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
                     return null;
                 }
                 
-                var decodedOutput = DecodeWithCustomKey(cleanedData, key);
+                var decodedOutput = DecodeWithCustomKey(cleanedData, BASE64_KEY);
                 return DecodeUtf8(decodedOutput);
             }
             catch (Exception ex) when (ex is ArgumentOutOfRangeException or OverflowException)

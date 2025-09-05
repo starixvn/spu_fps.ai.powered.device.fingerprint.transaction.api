@@ -1,6 +1,5 @@
 using Device.FingerPrint.TransactionAPI.Services;
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
 using Moq;
 using StackExchange.Redis;
 using StackExchange.Redis.Extensions.Core.Abstractions;

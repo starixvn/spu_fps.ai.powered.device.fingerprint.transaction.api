@@ -8,7 +8,6 @@ using Moq;
 using Newtonsoft.Json;
 using System.Text;
 using Xunit;
-using Fanex.Logging;
 using System.Diagnostics;
 
 namespace Device.FingerPrint.TransactionAPI.Tests.Controllers

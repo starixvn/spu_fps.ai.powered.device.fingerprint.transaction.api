@@ -1,6 +1,8 @@
-﻿using Device.FingerPrint.TransactionAPI.Model;
+﻿using Device.FingerPrint.TransactionAPI.Helpers;
+using Device.FingerPrint.TransactionAPI.Model;
 using Device.FingerPrint.TransactionAPI.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace Device.FingerPrint.TransactionAPI.Controllers
 {
@@ -16,13 +18,15 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         }
 
         [HttpPost("APFP/InsertFP4")]
-        public async Task<IActionResult> InsertFP4(FingerprintRequest request)
+        public async Task<IActionResult> InsertFP4([FromBody]string request)
         {
             try
             {
-                await _linkingService.InsertFingerprint(request.SessionKey, _linkingService.FP4_REDIS_KEY, request.Fingerprint);
+                var decodedRequest = Base64.Decode(request);
+                var fingerprintRequest = JsonSerializer.Deserialize<FingerprintRequest>(decodedRequest);
+                await _linkingService.InsertFingerprint(fingerprintRequest.SessionKey, _linkingService.FP4_REDIS_KEY, fingerprintRequest.Fingerprint);
 
-                return Ok($"{request.SessionKey}");
+                return Ok($"{fingerprintRequest.SessionKey}");
             }
             catch (Exception ex)
             {
@@ -32,13 +36,15 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         }
 
         [HttpPost("APFP/InsertFP5")]
-        public async Task<IActionResult> InsertFP5(FingerprintRequest request)
+        public async Task<IActionResult> InsertFP5([FromBody]string request)
         {
             try
             {
-                await _linkingService.InsertFingerprint(request.SessionKey, _linkingService.FP5_REDIS_KEY, request.Fingerprint);
+                var fingerprintRequest = JsonSerializer.Deserialize<FingerprintRequest>(Base64.Decode(request));
 
-                return Ok($"{request.SessionKey}");
+                await _linkingService.InsertFingerprint(fingerprintRequest.SessionKey, _linkingService.FP5_REDIS_KEY, fingerprintRequest.Fingerprint);
+
+                return Ok($"{fingerprintRequest.SessionKey}");
             }
             catch (Exception ex)
             {
