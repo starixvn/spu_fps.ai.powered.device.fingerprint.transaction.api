@@ -38,9 +38,9 @@ var services = builder.Services;
 
 builder.Services.AddSingleton<IAppSettings, AppSettings>();
 builder.Services.AddSingleton<IGatewaySetting, GatewaySetting>();
+services.AddSingleton<IRedisMultiplexDbService, RedisMultiplexDbService>();
 
 RegisterServiceStatic(services, configuration);
-RegisterRedisStatic(services, configuration);
 RegisterMassTransitStatic(services, configuration);
 
 builder.Services.AddSwaggerGen();
@@ -70,12 +70,15 @@ LogManager.SetDefaultLogCategory("FPS-API")
                     })
            ]);
 
-var redisService = app.Services.GetRequiredService<IRedisService>();
+var redisService = app.Services.GetRequiredService<IRedisMultiplexDbService>();
 var linkingService = app.Services.GetRequiredService<ILinkingService>();
-redisService.RedisDatabase.Database.Execute("CONFIG", "SET", "notify-keyspace-events", "Ex");
+redisService.ShadowDatabase.Execute("CONFIG", "SET", "notify-keyspace-events", "Ex");
 
 var channel = $"__keyevent@{appSettings.RedisSettings.ShadowDatabase}__:expired";
-redisService.RedisDatabase.SubscribeAsync<string>(channel, linkingService.LinkingOnExpired);
+var redisSubscriber = redisService.GetSubscriber();
+redisSubscriber.Subscribe(channel, async (channel, message) => {
+    await linkingService.LinkingOnExpired(message);
+});
 
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -120,23 +123,6 @@ static void RegisterServiceStatic(IServiceCollection services, IConfiguration co
     services.AddSingleton<IUMRestClient, UMRestClient>();
     services.AddSingleton<IMaintenanceService, MaintenanceService>();
     services.AddSingleton<ILinkingService, LinkingService>();
-}
-
-static void RegisterRedisStatic(IServiceCollection services, IConfiguration configuration)
-{
-    var redisConfiguration = configuration.GetSection("Redis").Get<RedisConfiguration>();
-
-    if (redisConfiguration is null)
-    {
-        throw new InvalidOperationException("Redis configuration section is missing from appsettings.");
-    }
-
-    services.AddSingleton(redisConfiguration);
-
-    services.AddSingleton<IRedisClient, RedisClient>();
-    services.AddSingleton<IRedisConnectionPoolManager, RedisConnectionPoolManager>();
-    services.AddSingleton<ISerializer, MsgPackObjectSerializer>();
-    services.AddSingleton<IRedisService, RedisService>();
 }
 
 static void RegisterMassTransitStatic(IServiceCollection services, IConfiguration configuration)

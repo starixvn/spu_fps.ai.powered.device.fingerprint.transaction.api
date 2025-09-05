@@ -14,46 +14,22 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
     public class TransactionControllerTests
     {
         private readonly Mock<IMaintenanceService> _mockMaintenanceService;
-        private readonly Mock<IAppSettings> _mockAppSettings;
         private readonly Mock<ILogger> _mockLogger;
-        private readonly Mock<ISubscriberService> _mockSubscriberService;
-        private readonly Mock<IMassTransitProducer> _mockMassTransitProducer;
-        private readonly Mock<IRedisService> _mockRedisService;
         private readonly Mock<ILinkingService> _mockLinkingService;
         private readonly TransactionController _controller;
 
         public TransactionControllerTests()
         {
             _mockMaintenanceService = new Mock<IMaintenanceService>();
-            _mockAppSettings = new Mock<IAppSettings>();
             _mockLogger = new Mock<ILogger>();
-            _mockSubscriberService = new Mock<ISubscriberService>();
-            _mockMassTransitProducer = new Mock<IMassTransitProducer>();
-            _mockRedisService = new Mock<IRedisService>();
             _mockLinkingService = new Mock<ILinkingService>();
 
             _controller = new TransactionController(
                 _mockMaintenanceService.Object,
-                _mockAppSettings.Object,
                 _mockLogger.Object,
-                _mockSubscriberService.Object,
-                _mockMassTransitProducer.Object,
-                _mockRedisService.Object,
                 _mockLinkingService.Object);
-
-            SetupDefaultMocks();
         }
 
-        private void SetupDefaultMocks()
-        {
-            // Default maintenance settings - system is operational
-            _mockMaintenanceService.Setup(x => x.GetUnderMaintenanceTime())
-                .Returns(new UnderMaintenanceTime { IsUnderMaintenanceTime = false });
-
-            _mockAppSettings.Setup(x => x.IsUM).Returns(false);
-            _mockAppSettings.Setup(x => x.IgnoredSites).Returns("");
-            _mockAppSettings.Setup(x => x.QueueName).Returns("test-transaction-queue");
-        }
 
         #region TestUM Tests
 

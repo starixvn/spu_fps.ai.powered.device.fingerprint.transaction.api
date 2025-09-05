@@ -1,6 +1,7 @@
 ﻿using Device.FingerPrint.TransactionAPI.Helpers;
 using Device.FingerPrint.TransactionAPI.Model;
 using Device.FingerPrint.TransactionAPI.Services;
+using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
@@ -24,14 +25,15 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             {
                 var decodedRequest = Base64.Decode(request);
                 var fingerprintRequest = JsonSerializer.Deserialize<FingerprintRequest>(decodedRequest);
-                await _linkingService.InsertFingerprint(fingerprintRequest.SessionKey, _linkingService.FP4_REDIS_KEY, fingerprintRequest.Fingerprint);
 
-                return Ok($"{fingerprintRequest.SessionKey}");
+                var response = await _linkingService.InsertFingerprint(fingerprintRequest.SessionKey, _linkingService.FP4_REDIS_KEY, fingerprintRequest.Fingerprint);
+
+                return Ok(response);
             }
             catch (Exception ex)
             {
                 await _logger.ErrorAsync("Error in InsertFP4", ex);
-                return BadRequest();
+                return BadRequest(ex);
             }
         }
 
@@ -42,14 +44,14 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             {
                 var fingerprintRequest = JsonSerializer.Deserialize<FingerprintRequest>(Base64.Decode(request));
 
-                await _linkingService.InsertFingerprint(fingerprintRequest.SessionKey, _linkingService.FP5_REDIS_KEY, fingerprintRequest.Fingerprint);
+                var response = await _linkingService.InsertFingerprint(fingerprintRequest.SessionKey, _linkingService.FP5_REDIS_KEY, fingerprintRequest.Fingerprint);
 
-                return Ok($"{fingerprintRequest.SessionKey}");
+                return Ok(response);
             }
             catch (Exception ex)
             {
                 await _logger.ErrorAsync("Error in InsertFP5", ex);
-                return BadRequest();
+                return BadRequest(ex);
             }
         }
     }

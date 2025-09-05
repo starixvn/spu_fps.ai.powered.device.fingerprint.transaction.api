@@ -12,11 +12,9 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
 {
     public class LinkingServiceTests
     {
-        private readonly Mock<ILogger> _mockLogger;
         private readonly Mock<IAppSettings> _mockAppSettings;
-        private readonly Mock<IRedisService> _mockRedisService;
-        private readonly Mock<IRedisDatabase> _mockRedisDatabase;
-        private readonly Mock<IDatabase> _mockDatabase;
+        private readonly Mock<IRedisMultiplexDbService> _mockRedisService;
+        private readonly Mock<IDatabase> _mockRedisDatabase;
         private readonly Mock<IBatch> _mockBatch;
         private readonly Mock<IMassTransitProducer> _mockMassTransitProducer;
 
@@ -44,20 +42,17 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
 
         public LinkingServiceTests()
         {
-            _mockLogger = new Mock<ILogger>();
             _mockAppSettings = new Mock<IAppSettings>();
-            _mockRedisService = new Mock<IRedisService>();
-            _mockRedisDatabase = new Mock<IRedisDatabase>();
-            _mockDatabase = new Mock<IDatabase>();
+            _mockRedisService = new Mock<IRedisMultiplexDbService>();
+            _mockRedisDatabase = new Mock<IDatabase>();
             _mockBatch = new Mock<IBatch>();
             _mockMassTransitProducer = new Mock<IMassTransitProducer>();
 
             // Setup the Redis service to return the mock database
-            _mockRedisService.Setup(r => r.RedisDatabase).Returns(_mockRedisDatabase.Object);
-            _mockRedisDatabase.Setup(d => d.Database).Returns(_mockDatabase.Object);
-            _mockDatabase.Setup(d => d.CreateBatch(It.IsAny<object>())).Returns(_mockBatch.Object);
-
-            _linkingService = new LinkingService(_mockLogger.Object, _mockAppSettings.Object, _mockRedisService.Object, _mockMassTransitProducer.Object);
+            _mockRedisService.Setup(r => r.GetDatabase(It.IsAny<int>())).Returns(_mockRedisDatabase.Object);
+            _mockRedisService.Setup(r => r.ShadowDatabase).Returns(_mockRedisDatabase.Object);
+            _mockRedisDatabase.Setup(db => db.CreateBatch(It.IsAny<object>())).Returns(_mockBatch.Object);
+            _linkingService = new LinkingService(_mockAppSettings.Object, _mockRedisService.Object, _mockMassTransitProducer.Object);
         }
 
         [Fact]
@@ -81,7 +76,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 .Returns(transactionTask);
 
             // Mock the HashDeleteAsync for cleanup
-            _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<string>(), It.IsAny<string[]>()))
+            _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<IDatabase>(), It.IsAny<string>(), It.IsAny<string[]>()))
                 .ReturnsAsync(3);
 
             // Act
@@ -91,7 +86,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             result.Should().BeTrue();
             _mockMassTransitProducer.Verify(m => m.SendAsync(It.IsAny<MessageQueue>(), It.IsAny<string>()), Times.Once);
             _mockBatch.Verify(b => b.Execute(), Times.Once);
-            _mockRedisService.Verify(r => r.HashDeleteAsync("testSession",
+            _mockRedisService.Verify(r => r.HashDeleteAsync(It.IsAny<IDatabase>(), "testSession",
                 It.Is<string[]>(keys => keys.Contains(_linkingService.FP4_REDIS_KEY) &&
                                       keys.Contains(_linkingService.FP5_REDIS_KEY) &&
                                       keys.Contains(_linkingService.TRANSACTION_REDIS_KEY))), Times.Once);
@@ -179,22 +174,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             result.Should().BeFalse();
             _mockMassTransitProducer.Verify(m => m.SendAsync(It.IsAny<MessageQueue>(), It.IsAny<string>()), Times.Never);
             _mockBatch.Verify(b => b.Execute(), Times.Once);
-        }
-
-        [Fact]
-        public async Task LinkingOnInsert_WhenExceptionOccurs_ShouldLogErrorAndRethrow()
-        {
-            // Arrange
-            _mockDatabase.Setup(d => d.CreateBatch(It.IsAny<object>()))
-                .Throws(new RedisConnectionException(ConnectionFailureType.SocketClosed, "Connection lost"));
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<RedisConnectionException>(() =>
-                _linkingService.LinkingOnInsert("testSession"));
-
-            _mockLogger.Verify(
-                l => l.ErrorAsync(It.IsAny<string>(), It.IsAny<Exception>()),
-                Times.Once);
         }
 
         [Fact]
@@ -309,17 +288,17 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 .Returns(transactionTask);
 
             // Mock the HashDeleteAsync for cleanup
-            _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<string>(), It.IsAny<string[]>()))
+            _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<IDatabase>(), It.IsAny<string>(), It.IsAny<string[]>()))
                 .ReturnsAsync(3);
 
             // Act
-            var result = await _linkingService.LinkingOnExpired("testSession_shadow");
+            var result = await _linkingService.LinkingOnExpired("testSession");
 
             // Assert
             result.Should().BeTrue();
             _mockMassTransitProducer.Verify(m => m.SendAsync(It.IsAny<MessageQueue>(), It.IsAny<string>()), Times.Once);
             _mockBatch.Verify(b => b.Execute(), Times.Once);
-            _mockRedisService.Verify(r => r.HashDeleteAsync("testSession",
+            _mockRedisService.Verify(r => r.HashDeleteAsync(It.IsAny<IDatabase>(), "testSession",
                 It.Is<string[]>(keys => keys.Contains(_linkingService.FP4_REDIS_KEY) &&
                                       keys.Contains(_linkingService.FP5_REDIS_KEY) &&
                                       keys.Contains(_linkingService.TRANSACTION_REDIS_KEY))), Times.Once);
@@ -345,17 +324,17 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 .Returns(transactionTask);
 
             // Mock the HashDeleteAsync for cleanup
-            _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<string>(), It.IsAny<string[]>()))
+            _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<IDatabase>(), It.IsAny<string>(), It.IsAny<string[]>()))
                 .ReturnsAsync(3);
 
             // Act
-            var result = await _linkingService.LinkingOnExpired("testSession_shadow");
+            var result = await _linkingService.LinkingOnExpired("testSession");
 
             // Assert
             result.Should().BeFalse();
             _mockMassTransitProducer.Verify(m => m.SendAsync(It.IsAny<MessageQueue>(), It.IsAny<string>()), Times.Never);
             _mockBatch.Verify(b => b.Execute(), Times.Once);
-            _mockRedisService.Verify(r => r.HashDeleteAsync("testSession",
+            _mockRedisService.Verify(r => r.HashDeleteAsync(It.IsAny<IDatabase>(), "testSession",
                 It.Is<string[]>(keys => keys.Contains(_linkingService.FP4_REDIS_KEY) &&
                                       keys.Contains(_linkingService.FP5_REDIS_KEY) &&
                                       keys.Contains(_linkingService.TRANSACTION_REDIS_KEY))), Times.Once);
@@ -380,11 +359,11 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 .Returns(transactionTask);
 
             // Mock the HashDeleteAsync for cleanup
-            _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<string>(), It.IsAny<string[]>()))
+            _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<IDatabase>(), It.IsAny<string>(), It.IsAny<string[]>()))
                 .ReturnsAsync(3);
 
             // Act
-            var result = await _linkingService.LinkingOnExpired("testSession_shadow");
+            var result = await _linkingService.LinkingOnExpired("testSession");
 
             // Assert
             result.Should().BeTrue();

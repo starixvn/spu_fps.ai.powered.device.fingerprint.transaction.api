@@ -16,11 +16,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
 
         public TransactionController(
             IMaintenanceService maintenanceService,
-            IAppSettings appSettings,
             ILogger logger,
-            ISubscriberService subscriberService,
-            IMassTransitProducer massTransitProducer,
-            IRedisService redisService,
             ILinkingService linkingService)
         {
             this.maintenanceService = maintenanceService;
@@ -38,9 +34,9 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                     return BadRequest("SessionKey is required");
                 }
 
-                await linkingService.InsertTransaction(request.SessionKey, request);
+                var response = await linkingService.InsertTransaction(request.SessionKey, request);
 
-                return Ok("Ok");
+                return Ok(response);
             }
             catch (Exception ex)
             {

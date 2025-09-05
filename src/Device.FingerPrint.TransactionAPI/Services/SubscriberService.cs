@@ -8,10 +8,10 @@ namespace Device.FingerPrint.TransactionAPI.Services
         Task<string> ValidateAsync(TransactionRequest transactionRequest);
     }
 
-    public class SubscriberService(IAppSettings appSettings, IRedisService redisService, HttpClient httpClient, ILogger logger) : ISubscriberService
+    public class SubscriberService(IAppSettings appSettings, IRedisMultiplexDbService redisMultiplexDbService, HttpClient httpClient, ILogger logger) : ISubscriberService
     {
         private readonly IAppSettings _appSettings = appSettings;
-        private readonly IRedisService _redisService = redisService;
+        private readonly IRedisMultiplexDbService _redisService = redisMultiplexDbService;
         private readonly HttpClient _httpClient = httpClient;
         private readonly ILogger _logger = logger;
 
@@ -54,7 +54,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         private async Task<SubscriberModel> GetSubscriberInfoByCache(string cacheKey, string subName)
         {
-            var subscriber = await _redisService.GetAsync<SubscriberModel>(cacheKey);
+            var subscriber = await _redisService.HashGetAsync<SubscriberModel>(_redisService.DefaultDatabase, cacheKey);
             if (subscriber != null)
             {
                 return subscriber;
@@ -68,7 +68,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             var subscriber = await GetDataSubscriberAsync(subName);
             if (subscriber != null)
             {
-                await _redisService.AddAsyncAndExpiryAsync(cacheKey, subscriber, DateTimeOffset.Now.AddHours(1));
+                await _redisService.HashSetAndExpireAsync(_redisService.DefaultDatabase, cacheKey, subscriber, 3600);
             }
             return subscriber;
         }
