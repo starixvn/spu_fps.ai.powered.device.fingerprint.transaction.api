@@ -55,7 +55,9 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
             if (updateExpire)
             {
+                var expireAt = DateTimeOffset.Now.AddSeconds(FINGERPRINT_TTL_IN_SECONDS).DateTime;
                 await _redisService.HashSetAndExpireAsync(_redisService.ShadowDatabase, sessionKey, dbIndex, FINGERPRINT_TTL_IN_SECONDS);
+                await _redisService.HashSetAsync(redisDb, sessionKey, "ExpireAt", expireAt.ToString(), isForceUpdate: true);
             }
 
             await _redisService.HashSetAsync(redisDb, sessionKey, key, fingerprint, isForceUpdate: true);
@@ -78,7 +80,9 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
             if (updateExpire)
             {
+                var expireAt = DateTimeOffset.Now.AddSeconds(TRANSACTION_TTL_IN_SECONDS).DateTime;
                 await _redisService.HashSetAndExpireAsync(_redisService.ShadowDatabase, sessionKey, dbIndex, TRANSACTION_TTL_IN_SECONDS);
+                await _redisService.HashSetAsync(redisDb, sessionKey, "ExpireAt", expireAt.ToString(), isForceUpdate: true);
             }
 
             await _redisService.HashSetAsync(redisDb, sessionKey, TRANSACTION_REDIS_KEY, transaction, isForceUpdate: true);
