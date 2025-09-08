@@ -1,6 +1,6 @@
 ﻿using Device.FingerPrint.TransactionAPI.Model;
-using Newtonsoft.Json;
 using StackExchange.Redis;
+using System.Text.Json;
 
 namespace Device.FingerPrint.TransactionAPI.Services
 {
@@ -28,8 +28,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         Task<T> HashGetAsync<T>(IDatabase db, string hashKey);
 
-
-        Task<long> HashDeleteAsync(IDatabase db, string hashKey, string[] keys);
+        Task HashDeleteAsync(IDatabase db, string hashKey);
     }
 
     public class RedisMultiplexDbService : IRedisMultiplexDbService
@@ -89,7 +88,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         public async Task<bool> HashSetAndExpireAsync<T>(IDatabase db, string hashKey, T value, long expireInSecond)
         {
-            var isSet = await db.StringSetAsync(hashKey, JsonConvert.SerializeObject(value));
+            var isSet = await db.StringSetAsync(hashKey, JsonSerializer.Serialize(value));
             if (isSet)
             {
                 return await db.KeyExpireAsync(hashKey, TimeSpan.FromSeconds(expireInSecond), CommandFlags.FireAndForget);
@@ -99,7 +98,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         public async Task HashSetAsync<T>(IDatabase db, string hashKey, string key, T value, bool isForceUpdate)
         {
-            await db.HashSetAsync(hashKey, key, JsonConvert.SerializeObject(value), when: isForceUpdate ? When.Always : When.NotExists);
+            await db.HashSetAsync(hashKey, key, JsonSerializer.Serialize(value), when: isForceUpdate ? When.Always : When.NotExists);
         }
 
         public Task<bool> HashExistAsync<T>(IDatabase db, string hashKey, string key)
@@ -111,13 +110,12 @@ namespace Device.FingerPrint.TransactionAPI.Services
         {
             var value = await db.StringGetAsync(hashKey);
 
-            return JsonConvert.DeserializeObject<T>(value);
+            return JsonSerializer.Deserialize<T>(value);
         }
 
-        public Task<long> HashDeleteAsync(IDatabase db, string hashKey, string[] keys)
+        public async Task HashDeleteAsync(IDatabase db, string hashKey)
         {
-            var redisKeys = keys.Select(x => (RedisValue)x).ToArray();
-            return db.HashDeleteAsync(hashKey, redisKeys);
+            await db.KeyDeleteAsync(hashKey);
         }
     }
 }

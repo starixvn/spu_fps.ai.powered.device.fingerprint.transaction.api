@@ -119,13 +119,13 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
             var fingerprint4 = JsonSerializer.Deserialize<APFingerprintModel>(fingerprint4RedisValue);
             var fingerprint5 = JsonSerializer.Deserialize<APFingerprintModel>(fingerprint5RedisValue);
-            var transactionRequest = JsonSerializer.Deserialize<TransactionRequest>(transactionRedisValue);
+            var transactionRequest = JsonSerializer.Deserialize<TransactionRequest>(transactionRedisValue.ToString());
 
             var messageQueue = BuildMessageQueue(transactionRequest, fingerprint4, fingerprint5);
 
             await _massTransitProducer.SendAsync(messageQueue, _appSettings.QueueName);
 
-            await _redisService.HashDeleteAsync(redisDb, sessionKey, [FP4_REDIS_KEY, FP5_REDIS_KEY, TRANSACTION_REDIS_KEY]);
+            await _redisService.HashDeleteAsync(redisDb, sessionKey);
             await _redisService.ShadowDatabase.KeyDeleteAsync(sessionKey, CommandFlags.FireAndForget);
 
             return true;
@@ -151,7 +151,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
             if (transactionRedisValue.IsNullOrEmpty)
             {
-                await _redisService.HashDeleteAsync(redisDb, sessionKey, [FP4_REDIS_KEY, FP5_REDIS_KEY, TRANSACTION_REDIS_KEY]);
+                await _redisService.HashDeleteAsync(redisDb, sessionKey);
                 return false;
             }
 
@@ -173,7 +173,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
             await _massTransitProducer.SendAsync(messageQueue, _appSettings.QueueName);
 
-            await _redisService.HashDeleteAsync(redisDb, sessionKey, [FP4_REDIS_KEY, FP5_REDIS_KEY, TRANSACTION_REDIS_KEY]);
+            await _redisService.HashDeleteAsync(redisDb, sessionKey);
             return true;
         }
 
