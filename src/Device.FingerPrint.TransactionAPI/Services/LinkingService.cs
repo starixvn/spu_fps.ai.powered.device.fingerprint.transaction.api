@@ -27,7 +27,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         private const int TRANSACTION_TTL_IN_SECONDS = 90;
 
-        private const int FINGERPRINT_TTL_IN_SECONDS = 10;
+        private const int FINGERPRINT_TTL_IN_SECONDS = 3 * 60 * 60;
 
         private readonly IAppSettings _appSettings;
         private readonly IRedisMultiplexDbService _redisService;
