@@ -53,14 +53,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 updateExpire = false;
             }
 
-            if (updateExpire)
-            {
-                var expireAt = DateTimeOffset.Now.AddSeconds(FINGERPRINT_TTL_IN_SECONDS).DateTime;
-                await _redisService.HashSetAndExpireAsync(_redisService.ShadowDatabase, sessionKey, dbIndex, FINGERPRINT_TTL_IN_SECONDS);
-                await _redisService.HashSetAsync(redisDb, sessionKey, "ExpireAt", expireAt.ToString(CultureInfo.InvariantCulture), isForceUpdate: true);
-            }
-
-            await _redisService.HashSetAsync(redisDb, sessionKey, key, fingerprint, isForceUpdate: true);
+            await InsertRedis(redisDb, dbIndex, sessionKey, key, fingerprint, FINGERPRINT_TTL_IN_SECONDS, updateExpire);
 
             await LinkingOnInsert(sessionKey);
             return $"{sessionKey}:{dbIndex}";
@@ -78,14 +71,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 updateExpire = false;
             }
 
-            if (updateExpire)
-            {
-                var expireAt = DateTimeOffset.Now.AddSeconds(TRANSACTION_TTL_IN_SECONDS).DateTime;
-                await _redisService.HashSetAndExpireAsync(_redisService.ShadowDatabase, sessionKey, dbIndex, TRANSACTION_TTL_IN_SECONDS);
-                await _redisService.HashSetAsync(redisDb, sessionKey, "ExpireAt", expireAt.ToString(CultureInfo.InvariantCulture), isForceUpdate: true);
-            }
-
-            await _redisService.HashSetAsync(redisDb, sessionKey, TRANSACTION_REDIS_KEY, transaction, isForceUpdate: true);
+            await InsertRedis(redisDb, dbIndex, sessionKey, TRANSACTION_REDIS_KEY, transaction, TRANSACTION_TTL_IN_SECONDS, updateExpire);
 
             await LinkingOnInsert(sessionKey);
 
@@ -126,14 +112,18 @@ namespace Device.FingerPrint.TransactionAPI.Services
             await _massTransitProducer.SendAsync(messageQueue, _appSettings.QueueName);
 
             await _redisService.HashDeleteAsync(redisDb, sessionKey);
-            await _redisService.ShadowDatabase.KeyDeleteAsync(sessionKey, CommandFlags.FireAndForget);
+            await _redisService.ShadowDatabase.KeyDeleteAsync($"{sessionKey}:{dbIndex}", CommandFlags.FireAndForget);
 
             return true;
         }
 
-        public async Task<bool> LinkingOnExpired(string sessionKey)
+        public async Task<bool> LinkingOnExpired(string hashkey)
         {
-            var dbIndex = await _redisService.GetDbIndex(sessionKey);
+            if ( string.IsNullOrEmpty(hashkey) || !hashkey.Contains(':'))
+            {
+                return false;
+            }
+            var (sessionKey, dbIndex) = ParseSessionKey(hashkey);
             var redisDb = _redisService.GetDatabase(dbIndex);
 
             var batch = redisDb.CreateBatch();
@@ -236,6 +226,37 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 Fingerprint = LinkFingerprintsAttributes([fingerprint4, fingerprint5])
             };
 
+        }
+
+        private async Task InsertRedis<T>(IDatabase redisDb, int dbIndex, string hashKey, string key, T value, int expiresInSecond, bool updateExpire)
+        {
+            if (updateExpire)
+            {
+                var expireAt = DateTimeOffset.Now.AddSeconds(expiresInSecond).DateTime;
+                await _redisService.HashSetAndExpireAsync(_redisService.ShadowDatabase, $"{hashKey}:{dbIndex}", dbIndex, expiresInSecond);
+                await _redisService.HashSetAsync(redisDb, hashKey, "ExpireAt", expireAt.ToString(CultureInfo.InvariantCulture), isForceUpdate: true);
+            }
+
+            await _redisService.HashSetAsync(redisDb, hashKey, key, value, isForceUpdate: true);
+        }
+
+        private (string, int) ParseSessionKey(string hashkey)
+        {
+            var parts = hashkey.Split(':');
+
+            var sessionKey = string.Empty;
+            var dbIndex = _appSettings.RedisSettings.Database;
+
+            if (parts.Length > 0)
+            {
+                sessionKey = parts[0];
+                if (parts.Length > 1 && int.TryParse(parts[1], out var parsedIndex))
+                {
+                    dbIndex = parsedIndex;
+                }
+            }
+
+            return (sessionKey, dbIndex);
         }
     }
 }
