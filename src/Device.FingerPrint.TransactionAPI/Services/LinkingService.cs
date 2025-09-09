@@ -25,9 +25,9 @@ namespace Device.FingerPrint.TransactionAPI.Services
         public string FP5_REDIS_KEY { get; } = "FP_B";
         public string TRANSACTION_REDIS_KEY { get; } = "Transaction";
 
-        private readonly int TRANSACTION_TTL_IN_SECONDS = 90;
+        private readonly int _transactionTtlInSeconds;
 
-        private readonly int FINGERPRINT_TTL_IN_SECONDS = 3 * 60 * 60;
+        private readonly int _fingerprintTtlInSeconds;
 
         private readonly IAppSettings _appSettings;
         private readonly IRedisMultiplexDbService _redisService;
@@ -39,8 +39,8 @@ namespace Device.FingerPrint.TransactionAPI.Services
             _redisService = redisMultiplexDbService;
             _massTransitProducer = massTransitProducer;
 
-            TRANSACTION_TTL_IN_SECONDS = _appSettings.RedisSettings.TransactionTTLInSeconds;
-            FINGERPRINT_TTL_IN_SECONDS = _appSettings.RedisSettings.FingerprintTTLInSeconds;
+            _transactionTtlInSeconds = _appSettings.RedisSettings.TransactionTTLInSeconds;
+            _fingerprintTtlInSeconds = _appSettings.RedisSettings.FingerprintTTLInSeconds;
         }
 
         public async Task<string> InsertFingerprint(string sessionKey, string key, APFingerprintModel fingerprint)
@@ -56,7 +56,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 updateExpire = false;
             }
 
-            await InsertRedis(redisDb, dbIndex, sessionKey, key, fingerprint, FINGERPRINT_TTL_IN_SECONDS, updateExpire);
+            await InsertRedis(redisDb, dbIndex, sessionKey, key, fingerprint, _fingerprintTtlInSeconds, updateExpire);
 
             await LinkingOnInsert(sessionKey);
             return $"{sessionKey}:{dbIndex}";
@@ -74,7 +74,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 updateExpire = false;
             }
 
-            await InsertRedis(redisDb, dbIndex, sessionKey, TRANSACTION_REDIS_KEY, transaction, TRANSACTION_TTL_IN_SECONDS, updateExpire);
+            await InsertRedis(redisDb, dbIndex, sessionKey, TRANSACTION_REDIS_KEY, transaction, _transactionTtlInSeconds, updateExpire);
 
             await LinkingOnInsert(sessionKey);
 
@@ -86,18 +86,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             var dbIndex = await _redisService.GetDbIndex(sessionKey);
             var redisDb = _redisService.GetDatabase(dbIndex);
 
-            var batch = redisDb.CreateBatch();
-
-            var getFP4Task = batch.HashGetAsync(sessionKey, FP4_REDIS_KEY);
-            var getFP5Task = batch.HashGetAsync(sessionKey, FP5_REDIS_KEY);
-            var getTransactionTask = batch.HashGetAsync(sessionKey, TRANSACTION_REDIS_KEY);
-
-            batch.Execute();
-            await Task.WhenAll(getFP4Task, getFP5Task, getTransactionTask);
-
-            var fingerprint4RedisValue = await getFP4Task;
-            var fingerprint5RedisValue = await getFP5Task;
-            var transactionRedisValue = await getTransactionTask;
+            var (fingerprint4RedisValue, fingerprint5RedisValue, transactionRedisValue) = await GetFingerprintData(redisDb, sessionKey);
 
             if (fingerprint4RedisValue.IsNullOrEmpty
                 || fingerprint5RedisValue.IsNullOrEmpty
@@ -108,7 +97,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
             var fingerprint4 = JsonSerializer.Deserialize<APFingerprintModel>(fingerprint4RedisValue);
             var fingerprint5 = JsonSerializer.Deserialize<APFingerprintModel>(fingerprint5RedisValue);
-            var transactionRequest = JsonSerializer.Deserialize<TransactionRequest>(transactionRedisValue.ToString());
+            var transactionRequest = JsonSerializer.Deserialize<TransactionRequest>(transactionRedisValue);
 
             var messageQueue = BuildMessageQueue(transactionRequest, fingerprint4, fingerprint5);
 
@@ -129,18 +118,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             var (sessionKey, dbIndex) = ParseSessionKey(hashkey);
             var redisDb = _redisService.GetDatabase(dbIndex);
 
-            var batch = redisDb.CreateBatch();
-
-            var getFP4Task = batch.HashGetAsync(sessionKey, FP4_REDIS_KEY);
-            var getFP5Task = batch.HashGetAsync(sessionKey, FP5_REDIS_KEY);
-            var getTransactionTask = batch.HashGetAsync(sessionKey, TRANSACTION_REDIS_KEY);
-
-            batch.Execute();
-            await Task.WhenAll(getFP4Task, getFP5Task, getTransactionTask);
-
-            var fingerprint4RedisValue = await getFP4Task;
-            var fingerprint5RedisValue = await getFP5Task;
-            var transactionRedisValue = await getTransactionTask;
+            var (fingerprint4RedisValue, fingerprint5RedisValue, transactionRedisValue) = await GetFingerprintData(redisDb, sessionKey);
 
             if (transactionRedisValue.IsNullOrEmpty)
             {
@@ -241,6 +219,19 @@ namespace Device.FingerPrint.TransactionAPI.Services
             }
 
             await _redisService.HashSetAsync(redisDb, hashKey, key, value, isForceUpdate: true);
+        }
+
+        private async Task<(RedisValue fp4, RedisValue fp5, RedisValue transaction)> GetFingerprintData(IDatabase redisDb, string sessionKey)
+        {
+            var batch = redisDb.CreateBatch();
+
+            var getFP4Task = batch.HashGetAsync(sessionKey, FP4_REDIS_KEY);
+            var getFP5Task = batch.HashGetAsync(sessionKey, FP5_REDIS_KEY);
+            var getTransactionTask = batch.HashGetAsync(sessionKey, TRANSACTION_REDIS_KEY);
+
+            batch.Execute();
+            var results = await Task.WhenAll(getFP4Task, getFP5Task, getTransactionTask);
+            return (results[0], results[1], results[2]);
         }
 
         private (string, int) ParseSessionKey(string hashkey)
