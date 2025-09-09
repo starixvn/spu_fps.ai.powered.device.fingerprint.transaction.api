@@ -1,6 +1,7 @@
 ﻿using Device.FingerPrint.TransactionAPI.Model;
 using Device.FingerPrint.TransactionAPI.Queue;
 using StackExchange.Redis;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json;
 
@@ -13,12 +14,13 @@ namespace Device.FingerPrint.TransactionAPI.Services
         string TRANSACTION_REDIS_KEY { get; }
 
         Task<bool> LinkingOnInsert(string sessionKey);
-        Task<bool> LinkingOnExpired(string sessionKey);
+        Task<bool> LinkingOnExpired(string hashkey);
 
         Task<string> InsertFingerprint(string sessionKey, string key, APFingerprintModel fingerprint);
         Task<string> InsertTransaction(string sessionKey, TransactionRequest transaction);
     }
 
+    [ExcludeFromCodeCoverage]
     public class LinkingService : ILinkingService
     {
         public string FP4_REDIS_KEY { get; } = "FP4";
