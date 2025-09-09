@@ -20,7 +20,6 @@ namespace Device.FingerPrint.TransactionAPI.Services
         Task<string> InsertTransaction(string sessionKey, TransactionRequest transaction);
     }
 
-    [ExcludeFromCodeCoverage]
     public class LinkingService : ILinkingService
     {
         public string FP4_REDIS_KEY { get; } = "FP4";
@@ -247,7 +246,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             var parts = hashkey.Split(':');
 
             var sessionKey = string.Empty;
-            var dbIndex = _appSettings.RedisSettings.Database;
+            var dbIndex = -1;
 
             if (parts.Length > 0)
             {

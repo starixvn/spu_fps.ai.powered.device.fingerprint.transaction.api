@@ -286,7 +286,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<IDatabase>(), It.IsAny<string>()));
 
             // Act
-            var result = await _linkingService.LinkingOnExpired("testSession");
+            var result = await _linkingService.LinkingOnExpired("testSession:10");
 
             // Assert
             result.Should().BeTrue();
@@ -318,7 +318,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<IDatabase>(), It.IsAny<string>()));
 
             // Act
-            var result = await _linkingService.LinkingOnExpired("testSession");
+            var result = await _linkingService.LinkingOnExpired("testSession:10");
 
             // Assert
             result.Should().BeFalse();
@@ -349,7 +349,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             _mockRedisService.Setup(r => r.HashDeleteAsync(It.IsAny<IDatabase>(), It.IsAny<string>()));
 
             // Act
-            var result = await _linkingService.LinkingOnExpired("testSession");
+            var result = await _linkingService.LinkingOnExpired("testSession:10");
 
             // Assert
             result.Should().BeTrue();
