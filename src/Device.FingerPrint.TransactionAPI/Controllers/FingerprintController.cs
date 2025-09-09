@@ -18,7 +18,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         }
 
         [HttpPost("APFP/InsertFP4")]
-        public async Task<IActionResult> InsertFP4([FromBody]string request)
+        public async Task<IActionResult> InsertFP4([FromForm] string request)
         {
             try
             {
@@ -37,7 +37,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         }
 
         [HttpPost("APFP/InsertFP5")]
-        public async Task<IActionResult> InsertFP5([FromBody]string request)
+        public async Task<IActionResult> InsertFP5([FromForm] string request)
         {
             try
             {
