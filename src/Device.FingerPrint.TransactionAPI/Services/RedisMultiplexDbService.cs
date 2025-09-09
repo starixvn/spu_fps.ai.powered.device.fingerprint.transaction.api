@@ -18,7 +18,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         IConnectionMultiplexer GetConnection();
 
-        Task<int> GetDbIndex(string hashedKey);
+        Task<int> GetDbIndex(string sessionKey);
 
         Task<bool> HashSetAndExpireAsync<T>(IDatabase db, string hashKey, T value, long expireInSecond);
 
@@ -73,13 +73,17 @@ namespace Device.FingerPrint.TransactionAPI.Services
             return _connectionMultiplexer.GetSubscriber();
         }
 
-        public async Task<int> GetDbIndex(string hashedKey)
+        public async Task<int> GetDbIndex(string sessionKey)
         {
-            var dbIndex = await shadowDatabase.StringGetAsync(hashedKey);
-            if (!dbIndex.IsNullOrEmpty
-                && int.TryParse(dbIndex.ToString(), out int dbIndexValue))
+            foreach (var dbIndex in _redisSettings.AvailableDatabases)
             {
-                return dbIndexValue;
+                var hashKey = $"{sessionKey}:{dbIndex}";
+                
+                var hashValue = await shadowDatabase.StringGetAsync(hashKey);
+                if (!hashValue.IsNullOrEmpty)
+                {
+                    return dbIndex;
+                }
             }
 
             return _redisSettings.AvailableDatabases[
