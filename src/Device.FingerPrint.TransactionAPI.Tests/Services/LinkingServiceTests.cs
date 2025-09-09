@@ -47,6 +47,13 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             _mockBatch = new Mock<IBatch>();
             _mockMassTransitProducer = new Mock<IMassTransitProducer>();
 
+            var redisSettings = new RedisSettings
+            {
+                FingerprintTTLInSeconds = 10800,
+                TransactionTTLInSeconds = 90
+            };
+            _mockAppSettings.Setup(r => r.RedisSettings).Returns(redisSettings);
+
             // Setup the Redis service to return the mock database
             _mockRedisService.Setup(r => r.GetDatabase(It.IsAny<int>())).Returns(_mockRedisDatabase.Object);
             _mockRedisService.Setup(r => r.ShadowDatabase).Returns(_mockRedisDatabase.Object);

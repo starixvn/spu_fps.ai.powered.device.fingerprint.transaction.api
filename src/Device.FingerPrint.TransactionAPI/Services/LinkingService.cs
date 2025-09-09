@@ -22,12 +22,12 @@ namespace Device.FingerPrint.TransactionAPI.Services
     public class LinkingService : ILinkingService
     {
         public string FP4_REDIS_KEY { get; } = "FP4";
-        public string FP5_REDIS_KEY { get; } = "FP5";
+        public string FP5_REDIS_KEY { get; } = "FP_B";
         public string TRANSACTION_REDIS_KEY { get; } = "Transaction";
 
-        private const int TRANSACTION_TTL_IN_SECONDS = 90;
+        private readonly int TRANSACTION_TTL_IN_SECONDS = 90;
 
-        private const int FINGERPRINT_TTL_IN_SECONDS = 3 * 60 * 60;
+        private readonly int FINGERPRINT_TTL_IN_SECONDS = 3 * 60 * 60;
 
         private readonly IAppSettings _appSettings;
         private readonly IRedisMultiplexDbService _redisService;
@@ -38,6 +38,9 @@ namespace Device.FingerPrint.TransactionAPI.Services
             _appSettings = appSettings;
             _redisService = redisMultiplexDbService;
             _massTransitProducer = massTransitProducer;
+
+            TRANSACTION_TTL_IN_SECONDS = _appSettings.RedisSettings.TransactionTTLInSeconds;
+            FINGERPRINT_TTL_IN_SECONDS = _appSettings.RedisSettings.FingerprintTTLInSeconds;
         }
 
         public async Task<string> InsertFingerprint(string sessionKey, string key, APFingerprintModel fingerprint)
