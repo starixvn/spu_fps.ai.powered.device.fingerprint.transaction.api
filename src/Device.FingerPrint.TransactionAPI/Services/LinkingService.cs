@@ -45,18 +45,10 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         public async Task<string> InsertFingerprint(string sessionKey, string key, APFingerprintModel fingerprint)
         {
-            var updateExpire = true;
             var dbIndex = await _redisService.GetDbIndex(sessionKey);
             var redisDb = _redisService.GetDatabase(dbIndex);
 
-            var isTransactionExists = await _redisService.HashExistAsync<string>(redisDb, sessionKey, TRANSACTION_REDIS_KEY);
-            var isFingerprintExists = await _redisService.HashExistAsync<string>(redisDb, sessionKey, (key == FP4_REDIS_KEY ? FP5_REDIS_KEY : FP4_REDIS_KEY));
-            if (isTransactionExists || isFingerprintExists)
-            {
-                updateExpire = false;
-            }
-
-            await InsertRedis(redisDb, dbIndex, sessionKey, key, fingerprint, _fingerprintTtlInSeconds, updateExpire);
+            await InsertRedis(redisDb, dbIndex, sessionKey, key, fingerprint, _fingerprintTtlInSeconds);
 
             await LinkingOnInsert(sessionKey);
             return $"{sessionKey}:{dbIndex}";
@@ -64,17 +56,10 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         public async Task<string> InsertTransaction(string sessionKey, TransactionRequest transaction)
         {
-            var updateExpire = true;
             var dbIndex = await _redisService.GetDbIndex(sessionKey);
             var redisDb = _redisService.GetDatabase(dbIndex);
 
-            var isTransactionExists = await _redisService.HashExistAsync<string>(redisDb, sessionKey, TRANSACTION_REDIS_KEY);
-            if (isTransactionExists)
-            {
-                updateExpire = false;
-            }
-
-            await InsertRedis(redisDb, dbIndex, sessionKey, TRANSACTION_REDIS_KEY, transaction, _transactionTtlInSeconds, updateExpire);
+            await InsertRedis(redisDb, dbIndex, sessionKey, TRANSACTION_REDIS_KEY, transaction, _transactionTtlInSeconds);
 
             await LinkingOnInsert(sessionKey);
 
@@ -209,9 +194,11 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         }
 
-        private async Task InsertRedis<T>(IDatabase redisDb, int dbIndex, string hashKey, string key, T value, int expiresInSecond, bool updateExpire)
+        private async Task InsertRedis<T>(IDatabase redisDb, int dbIndex, string hashKey, string key, T value, int expiresInSecond)
         {
-            if (updateExpire)
+            var isTransactionExists = await _redisService.HashExistAsync<string>(redisDb, hashKey, TRANSACTION_REDIS_KEY);
+
+            if (!isTransactionExists)
             {
                 var expireAt = DateTimeOffset.Now.AddSeconds(expiresInSecond).DateTime;
                 await _redisService.HashSetAndExpireAsync(_redisService.ShadowDatabase, $"{hashKey}:{dbIndex}", dbIndex, expiresInSecond);
