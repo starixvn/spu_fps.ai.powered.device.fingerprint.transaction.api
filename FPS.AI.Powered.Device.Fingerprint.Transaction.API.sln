@@ -1,0 +1,52 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36408.4
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Device.FingerPrint.TransactionAPI", "src\Device.FingerPrint.TransactionAPI\Device.FingerPrint.TransactionAPI.csproj", "{CD008B6D-F2A9-4BC3-8133-D949AFD40360}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Device.FingerPrint.TransactionAPI.Tests", "src\Device.FingerPrint.TransactionAPI.Tests\Device.FingerPrint.TransactionAPI.Tests.csproj", "{59951DFC-A339-4880-A596-A3A9FF84A13E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CD008B6D-F2A9-4BC3-8133-D949AFD40360}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD008B6D-F2A9-4BC3-8133-D949AFD40360}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD008B6D-F2A9-4BC3-8133-D949AFD40360}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CD008B6D-F2A9-4BC3-8133-D949AFD40360}.Debug|x64.Build.0 = Debug|Any CPU
+		{CD008B6D-F2A9-4BC3-8133-D949AFD40360}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CD008B6D-F2A9-4BC3-8133-D949AFD40360}.Debug|x86.Build.0 = Debug|Any CPU
+		{CD008B6D-F2A9-4BC3-8133-D949AFD40360}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD008B6D-F2A9-4BC3-8133-D949AFD40360}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD008B6D-F2A9-4BC3-8133-D949AFD40360}.Release|x64.ActiveCfg = Release|Any CPU
+		{CD008B6D-F2A9-4BC3-8133-D949AFD40360}.Release|x64.Build.0 = Release|Any CPU
+		{CD008B6D-F2A9-4BC3-8133-D949AFD40360}.Release|x86.ActiveCfg = Release|Any CPU
+		{CD008B6D-F2A9-4BC3-8133-D949AFD40360}.Release|x86.Build.0 = Release|Any CPU
+		{59951DFC-A339-4880-A596-A3A9FF84A13E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59951DFC-A339-4880-A596-A3A9FF84A13E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59951DFC-A339-4880-A596-A3A9FF84A13E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{59951DFC-A339-4880-A596-A3A9FF84A13E}.Debug|x64.Build.0 = Debug|Any CPU
+		{59951DFC-A339-4880-A596-A3A9FF84A13E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{59951DFC-A339-4880-A596-A3A9FF84A13E}.Debug|x86.Build.0 = Debug|Any CPU
+		{59951DFC-A339-4880-A596-A3A9FF84A13E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59951DFC-A339-4880-A596-A3A9FF84A13E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{59951DFC-A339-4880-A596-A3A9FF84A13E}.Release|x64.ActiveCfg = Release|Any CPU
+		{59951DFC-A339-4880-A596-A3A9FF84A13E}.Release|x64.Build.0 = Release|Any CPU
+		{59951DFC-A339-4880-A596-A3A9FF84A13E}.Release|x86.ActiveCfg = Release|Any CPU
+		{59951DFC-A339-4880-A596-A3A9FF84A13E}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A9AF5760-4A1E-4831-ACF1-7BE81A9DD13F}
+	EndGlobalSection
+EndGlobal

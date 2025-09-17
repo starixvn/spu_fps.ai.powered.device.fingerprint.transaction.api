@@ -1,0 +1,6 @@
+@Device.FingerPrint.TransactionAPI_HostAddress = http://localhost:5171
+
+GET {{Device.FingerPrint.TransactionAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
