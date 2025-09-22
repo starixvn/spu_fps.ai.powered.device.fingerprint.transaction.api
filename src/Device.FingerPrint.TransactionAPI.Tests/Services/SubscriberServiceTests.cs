@@ -1,4 +1,4 @@
-using Device.FingerPrint.TransactionAPI.Model;
+using Device.FingerPrint.Model;
 using Device.FingerPrint.TransactionAPI.Services;
 using FluentAssertions;
 using Moq;

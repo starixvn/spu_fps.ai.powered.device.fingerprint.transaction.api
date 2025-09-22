@@ -1,5 +1,5 @@
 ﻿using Device.FingerPrint.TransactionAPI.Helpers;
-using Device.FingerPrint.TransactionAPI.Model;
+using Device.FingerPrint.Model;
 using Device.FingerPrint.TransactionAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;

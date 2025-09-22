@@ -1,6 +1,6 @@
 ﻿using StackExchange.Redis.Extensions.Core.Configuration;
 
-namespace Device.FingerPrint.TransactionAPI.Model
+namespace Device.FingerPrint.Model
 {
     public class RedisSettings : RedisConfiguration
     {

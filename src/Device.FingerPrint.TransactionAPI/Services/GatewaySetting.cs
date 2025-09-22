@@ -1,4 +1,4 @@
-﻿using Device.FingerPrint.TransactionAPI.Model;
+﻿using Device.FingerPrint.Model;
 
 namespace Device.FingerPrint.TransactionAPI.Services
 {

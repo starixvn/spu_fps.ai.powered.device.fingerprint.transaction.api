@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Device.FingerPrint.TransactionAPI.Model
+namespace Device.FingerPrint.Model
 {
     public class APFingerprintModel
     {

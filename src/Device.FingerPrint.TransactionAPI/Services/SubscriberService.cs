@@ -1,4 +1,4 @@
-﻿using Device.FingerPrint.TransactionAPI.Model;
+﻿using Device.FingerPrint.Model;
 using Newtonsoft.Json;
 
 namespace Device.FingerPrint.TransactionAPI.Services
