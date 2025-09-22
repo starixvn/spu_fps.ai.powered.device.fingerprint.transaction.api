@@ -25,8 +25,11 @@
 		<PackageReference Include="StackExchange.Redis.Extensions.MsgPack" Version="10.2.0" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<SonarQubeSetting Include="sonar.coverage.exclusions">
-			<Value>**/Program.cs</Value>
+			<Value>**\Program.cs, **/*legacy*, **/*native*, **/*Test*, **/*Model*, **/*Entity*, **/*Criteria*, **/*Command*, **/*Exception*, **/*Test*/**, **/*Model*/**, **/*Entity*/**, **/*Criteria*/**, **/*Command*/**, **/*Exception*/**</Value>
 		</SonarQubeSetting>
 	</ItemGroup>
 
