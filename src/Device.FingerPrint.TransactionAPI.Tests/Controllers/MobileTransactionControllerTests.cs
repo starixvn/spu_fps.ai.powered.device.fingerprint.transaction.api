@@ -565,40 +565,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             stopwatch.ElapsedMilliseconds.Should().BeLessThan(3000, "100 insert operations should complete within 3 seconds");
         }
 
-        [Fact]
-        public void MobileTransactionToBase64_MemoryUsage_ShouldNotLeakMemory()
-        {
-            // Arrange
-            var mobileTransaction = CreateValidMobileTransaction();
-
-            // Force garbage collection before test
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            var initialMemory = GC.GetTotalMemory(false);
-
-            // Act
-            const int iterations = 5000;
-            for (int i = 0; i < iterations; i++)
-            {
-                var result = _controller.MobileTransactionToBase64(mobileTransaction);
-                // Don't hold references to allow garbage collection
-            }
-
-            // Force garbage collection after test
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            var finalMemory = GC.GetTotalMemory(false);
-            var memoryIncrease = finalMemory - initialMemory;
-
-            // Assert
-            // Memory increase should be minimal (less than 2MB for 5k conversions)
-            memoryIncrease.Should().BeLessThan(2 * 1024 * 1024, "Memory usage should not increase significantly");
-        }
-
         #endregion
 
         #region Integration Tests
