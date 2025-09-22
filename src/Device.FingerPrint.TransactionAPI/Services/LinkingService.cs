@@ -1,4 +1,5 @@
 ﻿using Device.FingerPrint.Model;
+using Device.FingerPrint.Models;
 using Device.FingerPrint.TransactionAPI.Queue;
 using StackExchange.Redis;
 using System.Globalization;
@@ -32,12 +33,14 @@ namespace Device.FingerPrint.TransactionAPI.Services
         private readonly IAppSettings _appSettings;
         private readonly IRedisMultiplexDbService _redisService;
         private readonly IMassTransitProducer _massTransitProducer;
+        private readonly IDeviceService _deviceService;
 
-        public LinkingService(IAppSettings appSettings, IRedisMultiplexDbService redisMultiplexDbService, IMassTransitProducer massTransitProducer)
+        public LinkingService(IAppSettings appSettings, IRedisMultiplexDbService redisMultiplexDbService, IMassTransitProducer massTransitProducer, IDeviceService deviceService)
         {
             _appSettings = appSettings;
             _redisService = redisMultiplexDbService;
             _massTransitProducer = massTransitProducer;
+            _deviceService = deviceService;
 
             _transactionTtlInSeconds = _appSettings.RedisSettings.TransactionTTLInSeconds;
             _fingerprintTtlInSeconds = _appSettings.RedisSettings.FingerprintTTLInSeconds;
@@ -173,7 +176,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         public MessageQueue BuildMessageQueue(TransactionRequest transactionRequest, APFingerprintModel? fingerprint4, APFingerprintModel? fingerprint5)
         {
-            return new MessageQueue
+            var message = new MessageQueue
             {
                 Account = transactionRequest.Account,
                 Device = BuildDeviceModel(transactionRequest),
@@ -192,6 +195,11 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 Fingerprint = LinkFingerprintsAttributes([fingerprint4, fingerprint5])
             };
 
+            if (message.Device.Di is not null)
+            {
+                message.DeviceInfo = _deviceService.GetDeviceInfo(message.Device.Di, message);
+            }
+            return message;
         }
 
         private async Task InsertRedis<T>(IDatabase redisDb, int dbIndex, string hashKey, string key, T value, int expiresInSecond)

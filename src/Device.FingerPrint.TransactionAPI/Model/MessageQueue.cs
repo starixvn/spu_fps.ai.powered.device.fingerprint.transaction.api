@@ -34,5 +34,9 @@
         public MobileModel? Mobile { get; set; }
 
         public APFingerprintModel? Fingerprint { get; set; }
+
+        public DeviceInfoModel DeviceInfo { get; set; }
+
+        public bool IsNewFlow { get; set; }
     }
 }

@@ -120,6 +120,7 @@ static void RegisterServiceStatic(IServiceCollection services, IConfiguration co
     services.AddSingleton<IUMRestClient, UMRestClient>();
     services.AddSingleton<IMaintenanceService, MaintenanceService>();
     services.AddSingleton<ILinkingService, LinkingService>();
+    services.AddSingleton<IDeviceService, DeviceService>();
 }
 
 static void RegisterMassTransitStatic(IServiceCollection services, IConfiguration configuration)
