@@ -13,6 +13,13 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
     public class DeviceService : IDeviceService
     {
+        private readonly ILogger _logger;
+
+        public DeviceService(ILogger logger)
+        {
+            _logger = logger;
+        }
+
         public DeviceInfoModel GetDeviceInfo(string deviceCode, MessageQueue message)
         {
             try
@@ -31,6 +38,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             }
             catch (Exception ex)
             {
+                _logger.Error("Consumer GetDeviceInfo: " + ex.Message + "\n" + JsonSerializer.Serialize(message));
             }
 
             return TransformEmptyDeviceInfo();
@@ -91,7 +99,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             {
                 AppVersion = deviceInfo.AppVersion,
                 Version = deviceInfo.Version,
-                CapturedDate = (long)(deviceInfo.CapturedDate == null ? DateTime.Now.Ticks : deviceInfo.CapturedDate),
+                CapturedDate = deviceInfo.CapturedDate ?? DateTimeOffset.Now.Ticks,
                 DeviceFPCode = deviceInfo.DeviceCode,
                 DeviceNo = deviceInfo.DeviceId,
                 HRef = deviceInfo.HRef,

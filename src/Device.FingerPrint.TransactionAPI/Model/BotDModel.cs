@@ -8,7 +8,7 @@
 
         public string Component { get; set; }
 
-        public bool IsVer3 { get; set; } = false;
+        public bool IsVer3 { get; set; }
 
         public string JscKey { get; set; }
     }

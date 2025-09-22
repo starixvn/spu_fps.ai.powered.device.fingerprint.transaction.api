@@ -1,5 +1,4 @@
 ﻿using Device.FingerPrint.Model;
-using Device.FingerPrint.Models;
 using Device.FingerPrint.TransactionAPI.Queue;
 using StackExchange.Redis;
 using System.Globalization;
