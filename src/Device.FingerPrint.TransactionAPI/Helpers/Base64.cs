@@ -29,6 +29,15 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
 
         private const string BASE64_KEY = "wFKfVDGZqRbyYCBi6IveMaQAh1ntWcP8ujT/U7r2xXs+J0L=4d3zEHSo5glN9kOpm";
 
+        public static string NormalDecode(string encodedData)
+        {
+            var validEncodedData = ValidEncodedData(encodedData);
+
+            byte[] bytes = Convert.FromBase64String(validEncodedData.Replace(" ", "+"));
+
+            return Encoding.UTF8.GetString(bytes);
+        }
+
         /// <summary>
         /// Decodes a Base64 encoded string using a custom key for character mapping.
         /// </summary>
@@ -258,6 +267,22 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
             
             result.Append(ConvertToChar(decodedChar));
             return index + 3;
+        }
+
+        private static string ValidEncodedData(string encodedData)
+        {
+            string pattern = "^[A-Za-z0-9+/]*={0,2}$";
+
+            Match match = Regex.Match(encodedData, pattern);
+
+            if (!match.Success)
+            {
+                int indexOfFirstInvalidChar = encodedData.IndexOf(encodedData.First(c => !Regex.IsMatch(c.ToString(), "[A-Za-z0-9+/=]")));
+
+                encodedData = encodedData.Substring(0, indexOfFirstInvalidChar);
+            }
+
+            return encodedData;
         }
     }
 }

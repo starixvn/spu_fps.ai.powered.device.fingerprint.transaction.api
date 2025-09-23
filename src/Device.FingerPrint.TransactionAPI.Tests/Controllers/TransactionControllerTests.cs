@@ -1,5 +1,6 @@
-using Device.FingerPrint.TransactionAPI.Controllers;
 using Device.FingerPrint.Model;
+using Device.FingerPrint.TransactionAPI.Controllers;
+using Device.FingerPrint.TransactionAPI.Queue;
 using Device.FingerPrint.TransactionAPI.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +16,9 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         private readonly Mock<IMaintenanceService> _mockMaintenanceService;
         private readonly Mock<ILogger> _mockLogger;
         private readonly Mock<ILinkingService> _mockLinkingService;
+        private readonly Mock<IDeviceService> _mockDeviceService;
+        private readonly Mock<IMassTransitProducer> _mockMassitProducer;
+        private readonly Mock<IAppSettings> _mockAppSettings;
         private readonly TransactionController _controller;
 
         public TransactionControllerTests()
@@ -22,11 +26,17 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             _mockMaintenanceService = new Mock<IMaintenanceService>();
             _mockLogger = new Mock<ILogger>();
             _mockLinkingService = new Mock<ILinkingService>();
+            _mockDeviceService = new Mock<IDeviceService>();
+            _mockMassitProducer = new Mock<IMassTransitProducer>();
+            _mockAppSettings = new Mock<IAppSettings>();
 
             _controller = new TransactionController(
                 _mockMaintenanceService.Object,
                 _mockLogger.Object,
-                _mockLinkingService.Object);
+                _mockLinkingService.Object,
+                _mockDeviceService.Object,
+                _mockMassitProducer.Object,
+                _mockAppSettings.Object);
         }
 
 

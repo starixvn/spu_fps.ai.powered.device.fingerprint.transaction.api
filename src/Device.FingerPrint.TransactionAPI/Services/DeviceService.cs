@@ -9,6 +9,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
     public interface IDeviceService
     {
         DeviceInfoModel GetDeviceInfo(string deviceCode, MessageQueue message);
+        DeviceInfoModel GetDeviceInfo(string deviceCode);
     }
 
     public class DeviceService : IDeviceService
@@ -18,6 +19,18 @@ namespace Device.FingerPrint.TransactionAPI.Services
         public DeviceService(ILogger logger)
         {
             _logger = logger;
+        }
+
+        public DeviceInfoModel GetDeviceInfo(string deviceCode)
+        {
+            if (string.IsNullOrWhiteSpace(deviceCode) || deviceCode.ToLower(System.Globalization.CultureInfo.CurrentCulture) == "null")
+            {
+                return TransformEmptyDeviceInfo();
+            }
+
+            var deviceInfo = DecodeAndDeserializeDeviceInfo(deviceCode);
+
+            return TransformDeviceInfo(deviceInfo);
         }
 
         public DeviceInfoModel GetDeviceInfo(string deviceCode, MessageQueue message)
@@ -51,7 +64,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 return GenerateEmptyDeviceInfo();
             }
 
-            string value = Base64.Decode(deviceInfo);
+            string value = Base64.NormalDecode(deviceInfo);
 
             return JsonSerializer.Deserialize<DeviceInfo>(value);
         }

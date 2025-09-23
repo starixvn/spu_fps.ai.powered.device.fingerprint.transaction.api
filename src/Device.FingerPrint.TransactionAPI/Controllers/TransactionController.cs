@@ -1,4 +1,5 @@
 ﻿using Device.FingerPrint.Model;
+using Device.FingerPrint.TransactionAPI.Queue;
 using Device.FingerPrint.TransactionAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using ONEbook.UM.Models;
@@ -12,15 +13,26 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         private readonly IMaintenanceService maintenanceService;
         private readonly ILogger logger;
         private readonly ILinkingService linkingService;
+        private readonly IDeviceService deviceService;
+        private readonly IMassTransitProducer massTransitProducer;
+        private readonly IAppSettings appSettings;
+
 
         public TransactionController(
             IMaintenanceService maintenanceService,
             ILogger logger,
-            ILinkingService linkingService)
+            ILinkingService linkingService,
+            IDeviceService deviceService,
+            IMassTransitProducer massTransitProducer,
+            IAppSettings appSettings
+            )
         {
             this.maintenanceService = maintenanceService;
             this.logger = logger;
             this.linkingService = linkingService;
+            this.deviceService = deviceService;
+            this.massTransitProducer = massTransitProducer;
+            this.appSettings = appSettings;
         }
 
         [HttpPost("APFP/InsertTransaction")]
@@ -28,7 +40,31 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         {
             try
             {
-                if(string.IsNullOrEmpty(request.SessionKey))
+                var di = request.Di ?? request.__di;
+                if(string.IsNullOrEmpty(di))
+                {
+                    return BadRequest("Di or __di is required");
+                }
+                var deviceInfo = deviceService.GetDeviceInfo(di);
+                var isNewFlow = true;
+                if(deviceInfo is not null && !string.IsNullOrEmpty(deviceInfo.Version))
+                {
+                    var majorVersion = deviceInfo.Version.Split('.').FirstOrDefault();
+                    if(int.TryParse(majorVersion, out int ver) && ver < 3)
+                    {
+                        isNewFlow = false;
+                    }
+                }
+
+                if (!isNewFlow)
+                {
+                    var deviceModel = TransformDeviceModel(request);
+                    await PushToQueueAsync(request, deviceModel);
+
+                    return Ok();
+                }
+
+                if (string.IsNullOrEmpty(request.SessionKey))
                 {
                     return BadRequest("SessionKey is required");
                 }
@@ -49,6 +85,45 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         public UnderMaintenanceTime TestUM()
         {
             return maintenanceService.GetUnderMaintenanceTime();
+        }
+
+        private static DeviceModel TransformDeviceModel(TransactionRequest transRequest)
+        {
+            return new DeviceModel
+            {
+                AcceptsTypes = transRequest.AcceptsTypes,
+                DetecasAnalysis = transRequest.DetecasAnalysis,
+                Di = transRequest.Di ?? transRequest.__di,
+                Ip = transRequest.Ip,
+                Url = transRequest.Url,
+                Platform = transRequest.Platform,
+                Screen = transRequest.Screen,
+                TotalMinutes = (DateTime.UtcNow - DateTime.Now).TotalMinutes.ToString(),
+                UserAgent = transRequest.UserAgent
+            };
+        }
+
+        private async Task PushToQueueAsync(TransactionRequest transactionRequest, DeviceModel deviceModel)
+        {
+            var dataEvent = new MessageQueue
+            {
+                Account = transactionRequest.Account,
+                Device = deviceModel,
+                Action = transactionRequest.Action,
+                ActionResult = transactionRequest.ActionResult,
+                Subscriber = transactionRequest.Subscriber,
+                SubscriberId = transactionRequest.SubscriberId,
+                IP = transactionRequest.Ip,
+                FakeIP = transactionRequest.FakeIp,
+                TransDate = transactionRequest.TransDate,
+                SubscriberDate = DateTime.Now,
+                Token = transactionRequest.Token,
+                Recaptcha = "",
+                SessionKey = transactionRequest.SessionKey,
+                BotD = transactionRequest.Bi,
+            };
+
+            await massTransitProducer.SendAsync(dataEvent, appSettings.QueueName);
         }
     }
 }

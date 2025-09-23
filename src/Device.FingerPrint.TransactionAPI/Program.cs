@@ -1,3 +1,4 @@
+using Device.FingerPrint.Model;
 using Device.FingerPrint.TransactionAPI;
 using Device.FingerPrint.TransactionAPI.Middleware;
 using Device.FingerPrint.TransactionAPI.Queue;
