@@ -104,17 +104,34 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
                 LoginTime = DateTime.Now,
                 CaptchaResult = "success",
                 SessionKey = "session-123",
-                TransDate = DateTime.Now
+                TransDate = DateTime.Now,
+                
             };
         }
 
         #endregion
 
         [Fact]
+        public async Task InsertTransactionAPFPAsync_ShouldCallLinkingService_WhenIsOldFlow()
+        {
+            // Arrange
+            var transactionRequest = CreateValidTransactionRequest();
+            _mockDeviceService.Setup(x => x.GetDeviceInfo(It.IsAny<string>()))
+                .Returns(new DeviceInfoModel { Version = "2.1.7" });
+            // Act
+            var result = await _controller.InsertTransactionAPFPAsync(transactionRequest);
+
+            // Assert
+            result.Should().BeOfType<OkResult>();
+        }
+
+        [Fact]
         public async Task InsertTransactionAPFPAsync_ShouldCallLinkingService_WhenIsNewFlow()
         {
             // Arrange
             var transactionRequest = CreateValidTransactionRequest();
+            _mockDeviceService.Setup(x => x.GetDeviceInfo(It.IsAny<string>()))
+                .Returns(new DeviceInfoModel { Version = "3.0.0" });
 
             // Act
             var result = await _controller.InsertTransactionAPFPAsync(transactionRequest);

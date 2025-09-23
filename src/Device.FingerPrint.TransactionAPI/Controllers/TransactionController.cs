@@ -43,11 +43,6 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             {
                 var di = request.Di ?? request.__di;
 
-                if(string.IsNullOrEmpty(di))
-                {
-                    return BadRequest("Di or __di is required");
-                }
-
                 var deviceInfo = deviceService.GetDeviceInfo(di);
                 if (string.IsNullOrEmpty(deviceInfo.UserAgent))
                 {
