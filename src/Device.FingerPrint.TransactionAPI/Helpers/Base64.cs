@@ -3,12 +3,8 @@ using System.Text.RegularExpressions;
 
 namespace Device.FingerPrint.TransactionAPI.Helpers
 {
-    /// <summary>
-    /// Provides Base64 decoding functionality with support for custom keys and UTF-8 encoding.
-    /// </summary>
     public static class Base64
     {
-        // Constants for magic numbers
         private const int Base64PaddingChar = 64;
         private const int AsciiThreshold = 128;
         private const int TwoByteUtf8Lower = 191;
@@ -24,7 +20,6 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
 
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(1000);
 
-        // Compiled regex patterns for better performance
         private static readonly Regex InvalidCharsRegex = new(@"[^A-Za-z0-9\+\/\=]", RegexOptions.Compiled, RegexTimeout);
 
         private const string BASE64_KEY = "wFKfVDGZqRbyYCBi6IveMaQAh1ntWcP8ujT/U7r2xXs+J0L=4d3zEHSo5glN9kOpm";
@@ -38,12 +33,6 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
             return Encoding.UTF8.GetString(bytes);
         }
 
-        /// <summary>
-        /// Decodes a Base64 encoded string using a custom key for character mapping.
-        /// </summary>
-        /// <param name="encodedData">The encoded string to decode.</param>
-        /// <param name="key">The custom key used for character mapping.</param>
-        /// <returns>The decoded string, or null if the input is null or empty.</returns>
         public static string? Decode(string? encodedData)
         {
             if (string.IsNullOrEmpty(encodedData))
@@ -71,12 +60,6 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
             }
         }
 
-        /// <summary>
-        /// Decodes encoded data using a custom key mapping.
-        /// </summary>
-        /// <param name="encodedData">The cleaned encoded data.</param>
-        /// <param name="key">The custom key for character mapping.</param>
-        /// <returns>The decoded output string.</returns>
         private static string DecodeWithCustomKey(string encodedData, string key)
         {
             var output = new StringBuilder(encodedData.Length);
@@ -103,13 +86,6 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
             return output.ToString();
         }
 
-        /// <summary>
-        /// Extracts four encoded values from the input data.
-        /// </summary>
-        /// <param name="encodedData">The encoded data string.</param>
-        /// <param name="key">The key for character mapping.</param>
-        /// <param name="index">The current index (passed by reference and updated).</param>
-        /// <returns>A tuple containing the four encoded values.</returns>
         private static (int enc1, int enc2, int enc3, int enc4) ExtractEncodedValues(
             string encodedData, string key, ref int index)
         {
@@ -121,13 +97,6 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
             return (enc1, enc2, enc3, enc4);
         }
 
-        /// <summary>
-        /// Gets the key index for a character at the current position.
-        /// </summary>
-        /// <param name="encodedData">The encoded data string.</param>
-        /// <param name="key">The key for character mapping.</param>
-        /// <param name="index">The current index (passed by reference and updated).</param>
-        /// <returns>The key index, or 0 if beyond string length.</returns>
         private static int GetKeyIndex(string encodedData, string key, ref int index)
         {
             if (index >= encodedData.Length)
@@ -140,14 +109,6 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
             return keyIndex >= 0 ? keyIndex : 0;
         }
 
-        /// <summary>
-        /// Calculates the decoded characters from encoded values.
-        /// </summary>
-        /// <param name="enc1">First encoded value.</param>
-        /// <param name="enc2">Second encoded value.</param>
-        /// <param name="enc3">Third encoded value.</param>
-        /// <param name="enc4">Fourth encoded value.</param>
-        /// <returns>A tuple containing the three decoded character values.</returns>
         private static (int chr1, int chr2, int chr3) CalculateDecodedCharacters(
             int enc1, int enc2, int enc3, int enc4)
         {
@@ -158,11 +119,6 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
             return (chr1, chr2, chr3);
         }
 
-        /// <summary>
-        /// Safely converts an integer to a character.
-        /// </summary>
-        /// <param name="value">The integer value to convert.</param>
-        /// <returns>The converted character.</returns>
         private static char ConvertToChar(int value)
         {
             if (value < 0 || value > char.MaxValue)
@@ -173,11 +129,6 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
             return Convert.ToChar(value);
         }
 
-        /// <summary>
-        /// Decodes UTF-8 encoded text.
-        /// </summary>
-        /// <param name="utfText">The UTF-8 encoded text to decode.</param>
-        /// <returns>The decoded string.</returns>
         private static string DecodeUtf8(string utfText)
         {
             ArgumentNullException.ThrowIfNull(utfText);
@@ -207,28 +158,11 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
             return result.ToString();
         }
 
-        /// <summary>
-        /// Checks if a character is an ASCII character.
-        /// </summary>
-        /// <param name="character">The character to check.</param>
-        /// <returns>True if the character is ASCII, false otherwise.</returns>
         private static bool IsAsciiCharacter(int character) => character < AsciiThreshold;
 
-        /// <summary>
-        /// Checks if a character is a two-byte UTF-8 character.
-        /// </summary>
-        /// <param name="character">The character to check.</param>
-        /// <returns>True if the character is a two-byte UTF-8 character, false otherwise.</returns>
         private static bool IsTwoByteUtf8Character(int character) => 
             character > TwoByteUtf8Lower && character < TwoByteUtf8Upper;
 
-        /// <summary>
-        /// Processes a two-byte UTF-8 character.
-        /// </summary>
-        /// <param name="utfText">The UTF-8 text being processed.</param>
-        /// <param name="result">The result StringBuilder.</param>
-        /// <param name="index">The current index.</param>
-        /// <returns>The updated index after processing.</returns>
         private static int ProcessTwoByteUtf8Character(string utfText, StringBuilder result, int index)
         {
             if (index + 1 >= utfText.Length)
@@ -244,13 +178,6 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
             return index + 2;
         }
 
-        /// <summary>
-        /// Processes a three-byte UTF-8 character.
-        /// </summary>
-        /// <param name="utfText">The UTF-8 text being processed.</param>
-        /// <param name="result">The result StringBuilder.</param>
-        /// <param name="index">The current index.</param>
-        /// <returns>The updated index after processing.</returns>
         private static int ProcessThreeByteUtf8Character(string utfText, StringBuilder result, int index)
         {
             if (index + 2 >= utfText.Length)
@@ -271,10 +198,14 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
 
         private static string ValidEncodedData(string encodedData)
         {
-            string pattern = "^[A-Za-z0-9+/]*={0,2}$";
+            const string pattern = "^[A-Za-z0-9+/]*={0,2}$";
 
-            Match match = Regex.Match(encodedData, pattern);
-
+            Match match = Regex.Match(
+                            encodedData,
+                            pattern,
+                            RegexOptions.None,
+                            TimeSpan.FromSeconds(1) 
+                        );
             if (!match.Success)
             {
                 int indexOfFirstInvalidChar = encodedData.IndexOf(encodedData.First(c => !Regex.IsMatch(c.ToString(), "[A-Za-z0-9+/=]")));

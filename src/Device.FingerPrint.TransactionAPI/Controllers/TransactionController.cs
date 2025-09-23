@@ -4,6 +4,7 @@ using Device.FingerPrint.TransactionAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using ONEbook.UM.Models;
 using ONEbook.UM.Services;
+using System.Globalization;
 
 namespace Device.FingerPrint.TransactionAPI.Controllers
 {
@@ -98,7 +99,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 Url = transRequest.Url,
                 Platform = transRequest.Platform,
                 Screen = transRequest.Screen,
-                TotalMinutes = (DateTime.UtcNow - DateTime.Now).TotalMinutes.ToString(),
+                TotalMinutes = (DateTimeOffset.UtcNow - DateTimeOffset.Now).TotalMinutes.ToString(CultureInfo.InvariantCulture),
                 UserAgent = transRequest.UserAgent
             };
         }
@@ -116,7 +117,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 IP = transactionRequest.Ip,
                 FakeIP = transactionRequest.FakeIp,
                 TransDate = transactionRequest.TransDate,
-                SubscriberDate = DateTime.Now,
+                SubscriberDate = DateTimeOffset.Now,
                 Token = transactionRequest.Token,
                 Recaptcha = "",
                 SessionKey = transactionRequest.SessionKey,
