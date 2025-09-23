@@ -1,4 +1,6 @@
-﻿namespace Device.FingerPrint.Models
+﻿using System.Text.Json.Serialization;
+
+namespace Device.FingerPrint.Models
 {
     public class DeviceInfo
     {
@@ -23,5 +25,22 @@
         public string Version { get; set; }
 
         public BotD BotD { get; set; }
+        [JsonPropertyName("tag")]
+        public string? Tagging { get; set; }
+
+        [JsonPropertyName("f4")]
+        public string? F4 { get; set; }
+
+        [JsonPropertyName("f5")]
+        public string? F5 { get; set; }
+
+        [JsonPropertyName("rtc")]
+        public string? Rtc { get; set; }
+
+        [JsonPropertyName("sk")]
+        public string? SessionKey { get; set; }
+
+        [JsonPropertyName("v")]
+        public string? NewVersion { get; set; }
     }
 }

@@ -43,5 +43,7 @@
         public string? SessionKey { get; set; }
 
         public DateTime TransDate { get; set; }
+
+        public bool? IsNewFlow { get; set; }
     }
 }

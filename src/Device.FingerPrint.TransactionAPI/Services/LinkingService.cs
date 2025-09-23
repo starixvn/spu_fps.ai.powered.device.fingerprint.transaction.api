@@ -191,7 +191,8 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 Recaptcha = "",
                 SessionKey = transactionRequest.SessionKey,
                 BotD = transactionRequest.Bi,
-                Fingerprint = LinkFingerprintsAttributes([fingerprint4, fingerprint5])
+                Fingerprint = LinkFingerprintsAttributes([fingerprint4, fingerprint5]),
+                IsNewFlow = transactionRequest.IsNewFlow ?? true
             };
 
             if (message.Device.Di is not null)

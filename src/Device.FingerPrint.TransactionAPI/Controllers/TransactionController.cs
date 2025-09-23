@@ -60,7 +60,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 if (!isNewFlow)
                 {
                     var deviceModel = TransformDeviceModel(request);
-                    await PushToQueueAsync(request, deviceModel);
+                    await PushToQueueAsync(request, deviceModel, deviceInfo);
 
                     return Ok();
                 }
@@ -104,7 +104,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             };
         }
 
-        private async Task PushToQueueAsync(TransactionRequest transactionRequest, DeviceModel deviceModel)
+        private async Task PushToQueueAsync(TransactionRequest transactionRequest, DeviceModel deviceModel, DeviceInfoModel deviceInfo)
         {
             var dataEvent = new MessageQueue
             {
@@ -122,6 +122,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 Recaptcha = "",
                 SessionKey = transactionRequest.SessionKey,
                 BotD = transactionRequest.Bi,
+                DeviceInfo = deviceInfo,
+                IsNewFlow = transactionRequest.IsNewFlow ?? false,
             };
 
             await massTransitProducer.SendAsync(dataEvent, appSettings.QueueName);

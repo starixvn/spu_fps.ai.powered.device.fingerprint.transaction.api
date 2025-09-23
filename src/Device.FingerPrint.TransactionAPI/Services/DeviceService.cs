@@ -63,8 +63,15 @@ namespace Device.FingerPrint.TransactionAPI.Services
             {
                 return GenerateEmptyDeviceInfo();
             }
-
-            string value = Base64.NormalDecode(deviceInfo);
+            var value = string.Empty;
+            if(deviceInfo.StartsWith("eyJ"))
+            {
+                value = Base64.NormalDecode(deviceInfo);
+            }
+            else
+            {
+                value = Base64.Decode(deviceInfo);
+            }
 
             return JsonSerializer.Deserialize<DeviceInfo>(value);
         }
@@ -111,7 +118,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             return new DeviceInfoModel
             {
                 AppVersion = deviceInfo.AppVersion,
-                Version = deviceInfo.Version,
+                Version = string.IsNullOrEmpty(deviceInfo.Version) ? deviceInfo.NewVersion : deviceInfo.Version,
                 CapturedDate = deviceInfo.CapturedDate ?? DateTimeOffset.Now.Ticks,
                 DeviceFPCode = deviceInfo.DeviceCode,
                 DeviceNo = deviceInfo.DeviceId,
@@ -132,7 +139,12 @@ namespace Device.FingerPrint.TransactionAPI.Services
                         Height = deviceInfo.Screen.Height,
                         Width = deviceInfo.Screen.Width
                     },
-                BotD = botD
+                BotD = botD,
+                Tagging = deviceInfo.Tagging,
+                F4 = deviceInfo.F4,
+                F5 = deviceInfo.F5,
+                Rtc = deviceInfo.Rtc,
+                SessionKey = deviceInfo.SessionKey,
             };
         }
 
