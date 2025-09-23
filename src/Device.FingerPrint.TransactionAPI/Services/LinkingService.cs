@@ -199,7 +199,8 @@ namespace Device.FingerPrint.TransactionAPI.Services
             {
                 message.DeviceInfo = _deviceService.GetDeviceInfo(message.Device.Di, message);
 
-                if (string.IsNullOrEmpty(message.DeviceInfo.UserAgent))
+                if (message.DeviceInfo is not null && 
+                    string.IsNullOrEmpty(message.DeviceInfo.UserAgent))
                 {
                     message.DeviceInfo.UserAgent = transactionRequest.UserAgent;
                 }
