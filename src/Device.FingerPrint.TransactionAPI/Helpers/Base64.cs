@@ -208,7 +208,12 @@ namespace Device.FingerPrint.TransactionAPI.Helpers
                         );
             if (!match.Success)
             {
-                int indexOfFirstInvalidChar = encodedData.IndexOf(encodedData.First(c => !Regex.IsMatch(c.ToString(), "[A-Za-z0-9+/=]")));
+                int indexOfFirstInvalidChar = encodedData.IndexOf(encodedData.First(c => !Regex.IsMatch(
+                                                                        c.ToString(),
+                                                                        "[A-Za-z0-9+/=]",
+                                                                        RegexOptions.None,
+                                                                        TimeSpan.FromSeconds(1) // set timeout
+                                                                    )));
 
                 encodedData = encodedData.Substring(0, indexOfFirstInvalidChar);
             }
