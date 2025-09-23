@@ -7,9 +7,9 @@ namespace Device.FingerPrint.TransactionAPI.Model
     {
         private static volatile JsonSerializerSettings _instance;
 
-        public static JsonSerializerSettings Instance => _instance;
+        public static JsonSerializerSettings Instance => Init();
 
-        static JsonSerializerSettingsFactory()
+        static JsonSerializerSettings Init()
         {
             _instance = new JsonSerializerSettings
             {
@@ -17,6 +17,7 @@ namespace Device.FingerPrint.TransactionAPI.Model
                 MissingMemberHandling = MissingMemberHandling.Ignore,
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             };
+            return _instance;
         }
     }
 }
