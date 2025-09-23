@@ -1,8 +1,9 @@
 ﻿using Device.FingerPrint.Model;
 using Device.FingerPrint.Models;
 using Device.FingerPrint.TransactionAPI.Helpers;
+using Device.FingerPrint.TransactionAPI.Model;
 using Fanex.Logging;
-using System.Text.Json;
+using Newtonsoft.Json;
 
 namespace Device.FingerPrint.TransactionAPI.Services
 {
@@ -51,7 +52,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             }
             catch (Exception ex)
             {
-                _logger.Error("Consumer GetDeviceInfo: " + ex.Message + "\n" + JsonSerializer.Serialize(message));
+                _logger.Error("Consumer GetDeviceInfo: " + ex.Message + "\n" + JsonConvert.SerializeObject(message));
             }
 
             return TransformEmptyDeviceInfo();
@@ -66,7 +67,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
             var value = deviceInfo.StartsWith("eyJ") ? Base64.NormalDecode(deviceInfo) : Base64.Decode(deviceInfo);
 
-            return JsonSerializer.Deserialize<DeviceInfo>(value);
+            return JsonConvert.DeserializeObject<DeviceInfo>(value, JsonSerializerSettingsFactory.Instance);
         }
 
         private static DeviceInfo GenerateEmptyDeviceInfo()
@@ -105,7 +106,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             }
             catch (Exception ex)
             {
-                LogService.Error("Consumer TransformDeviceInfo: " + ex.Message + "\n" + JsonSerializer.Serialize(deviceInfo));
+                LogService.Error("Consumer TransformDeviceInfo: " + ex.Message + "\n" + JsonConvert.SerializeObject(deviceInfo));
             }
 
             return new DeviceInfoModel

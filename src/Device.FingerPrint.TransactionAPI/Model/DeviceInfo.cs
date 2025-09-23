@@ -1,46 +1,57 @@
-﻿using System.Text.Json.Serialization;
+﻿using Newtonsoft.Json;
 
 namespace Device.FingerPrint.Models
 {
     public class DeviceInfo
     {
+        [JsonProperty("na")]
         public string NA { get; set; }
 
+        [JsonProperty("deviceCode")]
         public string DeviceCode { get; set; }
 
+        [JsonProperty("appVersion")]
         public string AppVersion { get; set; }
 
+        [JsonProperty("timeZone")]
         public string TimeZone { get; set; }
 
+        [JsonProperty("userAgent")]
         public string UserAgent { get; set; }
 
+        [JsonProperty("screen")]
         public DeviceScreen Screen { get; set; }
 
+        [JsonProperty("deviceId")]
         public string DeviceId { get; set; }
 
+        [JsonProperty("href")]
         public string HRef { get; set; }
 
+        [JsonProperty("capturedDate")]
         public long? CapturedDate { get; set; }
 
+        [JsonProperty("version")]
         public string Version { get; set; }
 
         public BotD BotD { get; set; }
-        [JsonPropertyName("tag")]
+
+        [JsonProperty("tag")]
         public string? Tagging { get; set; }
 
-        [JsonPropertyName("f4")]
+        [JsonProperty("f4")]
         public string? F4 { get; set; }
 
-        [JsonPropertyName("f5")]
+        [JsonProperty("f5")]
         public string? F5 { get; set; }
 
-        [JsonPropertyName("rtc")]
+        [JsonProperty("rtc")]
         public string? Rtc { get; set; }
 
-        [JsonPropertyName("sk")]
+        [JsonProperty("sk")]
         public string? SessionKey { get; set; }
 
-        [JsonPropertyName("v")]
+        [JsonProperty("v")]
         public string? NewVersion { get; set; }
     }
 }
