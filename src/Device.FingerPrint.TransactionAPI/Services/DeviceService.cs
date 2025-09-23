@@ -63,15 +63,8 @@ namespace Device.FingerPrint.TransactionAPI.Services
             {
                 return GenerateEmptyDeviceInfo();
             }
-            var value = string.Empty;
-            if(deviceInfo.StartsWith("eyJ"))
-            {
-                value = Base64.NormalDecode(deviceInfo);
-            }
-            else
-            {
-                value = Base64.Decode(deviceInfo);
-            }
+
+            var value = deviceInfo.StartsWith("eyJ") ? Base64.NormalDecode(deviceInfo) : Base64.Decode(deviceInfo);
 
             return JsonSerializer.Deserialize<DeviceInfo>(value);
         }

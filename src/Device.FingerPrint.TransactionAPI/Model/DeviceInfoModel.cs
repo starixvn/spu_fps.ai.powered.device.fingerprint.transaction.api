@@ -1,7 +1,4 @@
-﻿using Newtonsoft.Json;
-using System.Text.Json.Serialization;
-
-namespace Device.FingerPrint.Model
+﻿namespace Device.FingerPrint.Model
 {
     public class DeviceInfoModel
     {
