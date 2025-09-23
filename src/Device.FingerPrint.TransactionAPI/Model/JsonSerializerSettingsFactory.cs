@@ -5,19 +5,13 @@ namespace Device.FingerPrint.TransactionAPI.Model
 {
     public static class JsonSerializerSettingsFactory
     {
-        private static volatile JsonSerializerSettings _instance;
-
-        public static JsonSerializerSettings Instance => Init();
-
-        static JsonSerializerSettings Init()
+        private static readonly JsonSerializerSettings _instance = new JsonSerializerSettings
         {
-            _instance = new JsonSerializerSettings
-            {
-                NullValueHandling = NullValueHandling.Ignore,
-                MissingMemberHandling = MissingMemberHandling.Ignore,
-                ContractResolver = new CamelCasePropertyNamesContractResolver()
-            };
-            return _instance;
-        }
+            NullValueHandling = NullValueHandling.Ignore,
+            MissingMemberHandling = MissingMemberHandling.Ignore,
+            ContractResolver = new CamelCasePropertyNamesContractResolver()
+        };
+
+        public static JsonSerializerSettings Instance => _instance;
     }
 }
