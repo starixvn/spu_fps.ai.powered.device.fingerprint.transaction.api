@@ -50,7 +50,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
         public void GetDeviceInfo_ShouldReturnDeviceInfo_WhenIsNewFlow()
         {
             // Arrange
-            var deviceInfo = "P3Rzn3qlqr6d1Q6oBfYgYSqSBfIj1eFTBeYSBfcTBeYoC/M5CQVEqT4TcTqlq/YLYK54qT4T1/6TBTRUBGaUCzj7hrhzYQ6oYzDjCeMz1fWgYSRTYfhoC/wSCKqJq2Ij13qlqrVEYGhHCrYSCejjCz651r1jCGqo1GhzCQhg1rq3CrYHqT4T1/MTBTqoC/WHCr6oYzq3CzFTYe171GDrhzMH1/UHhecjYrYoC3qJq2REh3qlq/JdYeULBfqLYeY4y/q4BKRk";
+            var deviceInfo = "P3Rzn3qlq/D7hQqg1fa/BGYS1eITCz7TYe17hzME1/jjCzV5hSRrqT4TcTqlq/YLYK54qT4T1/6TBTRUCzM5YeYHC/I/he7UBGVo1Qa/1eh3hSYdh/V3CzYdYKqJq2Ij13qlqrVEYGhHCrYSCejjCz651r1jCGqo1GhzCQhg1rq3CrYHqT4T1/MTBTRThehzCf6SY/u41rq51Q1j1GD/Y/ajhzVd1QVghzjjBKqJq2REh3qlq/JdYeULBfqLYeY4y/q4BKRk";
 
             // Act
             var result = _deviceService.GetDeviceInfo(deviceInfo);

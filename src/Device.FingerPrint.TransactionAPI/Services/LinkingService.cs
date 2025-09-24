@@ -1,4 +1,5 @@
 ﻿using Device.FingerPrint.Model;
+using Device.FingerPrint.Models;
 using Device.FingerPrint.TransactionAPI.Queue;
 using StackExchange.Redis;
 using System.Globalization;
@@ -203,6 +204,11 @@ namespace Device.FingerPrint.TransactionAPI.Services
                     string.IsNullOrEmpty(message.DeviceInfo.UserAgent))
                 {
                     message.DeviceInfo.UserAgent = transactionRequest.UserAgent;
+                }
+
+                if (!string.IsNullOrEmpty(transactionRequest.Bi))
+                {
+                    message.DeviceInfo.BotD = _deviceService.TransformBotdModel(transactionRequest.Bi);
                 }
             }
             return message;

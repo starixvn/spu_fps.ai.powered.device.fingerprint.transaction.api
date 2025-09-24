@@ -10,7 +10,10 @@ namespace Device.FingerPrint.TransactionAPI.Services
     public interface IDeviceService
     {
         DeviceInfoModel GetDeviceInfo(string deviceCode, MessageQueue message);
+
         DeviceInfoModel GetDeviceInfo(string deviceCode);
+
+        BotDModel TransformBotdModel(string rawbotD);
     }
 
     public class DeviceService : IDeviceService
@@ -68,6 +71,28 @@ namespace Device.FingerPrint.TransactionAPI.Services
             var value = deviceInfo.StartsWith("eyJ") ? Base64.NormalDecode(deviceInfo) : Base64.Decode(deviceInfo);
 
             return JsonConvert.DeserializeObject<DeviceInfo>(value, JsonSerializerSettingsFactory.Instance);
+        }
+
+        public BotDModel TransformBotdModel(string rawbotD)
+        {
+            if (!string.IsNullOrEmpty(rawbotD))
+            {
+                try
+                {
+                    var botD = Base64.Decode(rawbotD);
+
+                    if (!string.IsNullOrEmpty(botD) && Utilities.IsValidJson(botD))
+                    {
+                        return JsonConvert.DeserializeObject<BotDModel>(botD);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogService.Info("Error TransformBotdModel: " + ex.Message + "\n" + rawbotD);
+                }
+            }
+
+            return new BotDModel();
         }
 
         private static DeviceInfo GenerateEmptyDeviceInfo()

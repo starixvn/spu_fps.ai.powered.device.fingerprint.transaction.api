@@ -49,6 +49,11 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                     deviceInfo.UserAgent = request.UserAgent;
                 }
 
+                if (!string.IsNullOrEmpty(request.Bi))
+                {
+                    deviceInfo.BotD = deviceService.TransformBotdModel(request.Bi));
+                }
+
                 var isNewFlow = true;
                 if(deviceInfo is not null && !string.IsNullOrEmpty(deviceInfo.Version))
                 {
