@@ -17,7 +17,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         private readonly IDeviceService deviceService;
         private readonly IMassTransitProducer massTransitProducer;
         private readonly IAppSettings appSettings;
-
+        private readonly IRedisMultiplexDbService redisMultiplexDbService;
 
         public TransactionController(
             IMaintenanceService maintenanceService,
@@ -25,7 +25,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             ILinkingService linkingService,
             IDeviceService deviceService,
             IMassTransitProducer massTransitProducer,
-            IAppSettings appSettings
+            IAppSettings appSettings,
+            IRedisMultiplexDbService redisMultiplexDbService
             )
         {
             this.maintenanceService = maintenanceService;
@@ -34,6 +35,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             this.deviceService = deviceService;
             this.massTransitProducer = massTransitProducer;
             this.appSettings = appSettings;
+            this.redisMultiplexDbService = redisMultiplexDbService;
         }
 
         [HttpPost("APFP/InsertTransaction")]
@@ -41,6 +43,16 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         {
             try
             {
+                await redisMultiplexDbService.ShadowDatabase.HashIncrementAsync("TransactionAPI", "InsertTransaction", 1);
+            }
+            catch (Exception ex)
+            {
+                await logger.ErrorAsync("Error in Counter Insert Transaction APFP", ex);
+            }
+
+            try
+            {
+                
                 var di = request.Di ?? request.__di;
 
                 var deviceInfo = deviceService.GetDeviceInfo(di);
@@ -51,7 +63,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
 
                 if (!string.IsNullOrEmpty(request.Bi))
                 {
-                    deviceInfo.BotD = deviceService.TransformBotdModel(request.Bi));
+                    deviceInfo.BotD = deviceService.TransformBotdModel(request.Bi);
                 }
 
                 var isNewFlow = true;
@@ -83,7 +95,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             }
             catch (Exception ex)
             {
-                await logger.ErrorAsync("Error in InsertFP4", ex);
+                await logger.ErrorAsync("Error in Insert Transaction", ex);
                 return BadRequest();
             }
         }
