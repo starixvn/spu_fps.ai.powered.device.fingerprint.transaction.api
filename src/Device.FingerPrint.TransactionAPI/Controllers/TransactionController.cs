@@ -43,7 +43,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         {
             try
             {
-                await redisMultiplexDbService.ShadowDatabase.HashIncrementAsync("TransactionAPI", "InsertTransaction", 1);
+                await redisMultiplexDbService.DefaultDatabase.HashIncrementAsync("TransactionAPI", "InsertTransaction", 1);
             }
             catch (Exception ex)
             {

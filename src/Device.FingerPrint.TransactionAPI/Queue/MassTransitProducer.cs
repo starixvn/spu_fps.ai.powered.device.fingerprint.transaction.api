@@ -39,7 +39,7 @@ namespace Device.FingerPrint.TransactionAPI.Queue
         {
             try
             {
-                await redisMultiplexDbService.ShadowDatabase.HashIncrementAsync("TransactionAPI", "ToQueueTransaction", 1);
+                await redisMultiplexDbService.DefaultDatabase.HashIncrementAsync("TransactionAPI", "ToQueueTransaction", 1);
             }
             catch (Exception ex)
             {
