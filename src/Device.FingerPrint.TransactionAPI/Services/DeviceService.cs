@@ -79,7 +79,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             {
                 try
                 {
-                    var botD = Base64.Decode(rawbotD);
+                    var botD = rawbotD.StartsWith("eyJ") ? Base64.NormalDecode(rawbotD) : Base64.Decode(rawbotD);
 
                     if (!string.IsNullOrEmpty(botD) && Utilities.IsValidJson(botD))
                     {
