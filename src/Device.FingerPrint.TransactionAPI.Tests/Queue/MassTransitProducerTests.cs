@@ -1,4 +1,5 @@
 using Device.FingerPrint.TransactionAPI.Queue;
+using Device.FingerPrint.TransactionAPI.Services;
 using FluentAssertions;
 using MassTransit;
 using Moq;
@@ -12,6 +13,8 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Queue
     public class MassTransitProducerTests
     {
         private readonly Mock<IBus> _mockBus;
+        private readonly Mock<IRedisMultiplexDbService> _mockRedisMultiplexDbService = new();
+        private readonly Mock<ILogger> _mockLogger = new();
         private readonly Mock<ISendEndpoint> _mockSendEndpoint;
         private readonly MassTransitProducer _massTransitProducer;
         private readonly string _testAddress = "rabbitmq://localhost/test-queue";
@@ -19,8 +22,10 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Queue
         public MassTransitProducerTests()
         {
             _mockBus = new Mock<IBus>();
+            _mockLogger = new Mock<ILogger>();
+            _mockRedisMultiplexDbService = new Mock<IRedisMultiplexDbService>();
             _mockSendEndpoint = new Mock<ISendEndpoint>();
-            _massTransitProducer = new MassTransitProducer(_mockBus.Object);
+            _massTransitProducer = new MassTransitProducer(_mockBus.Object, _mockRedisMultiplexDbService.Object, _mockLogger.Object);
 
             // Setup default successful endpoint resolution
             _mockBus.Setup(x => x.GetSendEndpoint(It.IsAny<Uri>()))
