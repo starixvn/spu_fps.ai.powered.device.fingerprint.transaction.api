@@ -11,6 +11,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
 {
     public class LinkingServiceTests
     {
+        private readonly Mock<ILogger> _mockLogger;
         private readonly Mock<IAppSettings> _mockAppSettings;
         private readonly Mock<IRedisMultiplexDbService> _mockRedisService;
         private readonly Mock<IDatabase> _mockRedisDatabase;
@@ -42,6 +43,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
 
         public LinkingServiceTests()
         {
+            _mockLogger = new Mock<ILogger>();
             _mockAppSettings = new Mock<IAppSettings>();
             _mockRedisService = new Mock<IRedisMultiplexDbService>();
             _mockRedisDatabase = new Mock<IDatabase>();
@@ -60,7 +62,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             _mockRedisService.Setup(r => r.GetDatabase(It.IsAny<int>())).Returns(_mockRedisDatabase.Object);
             _mockRedisService.Setup(r => r.ShadowDatabase).Returns(_mockRedisDatabase.Object);
             _mockRedisDatabase.Setup(db => db.CreateBatch(It.IsAny<object>())).Returns(_mockBatch.Object);
-            _linkingService = new LinkingService(_mockAppSettings.Object, _mockRedisService.Object, _mockMassTransitProducer.Object, _mockDeviceService.Object);
+            _linkingService = new LinkingService(_mockLogger.Object, _mockAppSettings.Object, _mockRedisService.Object, _mockMassTransitProducer.Object, _mockDeviceService.Object);
         }
 
         [Fact]

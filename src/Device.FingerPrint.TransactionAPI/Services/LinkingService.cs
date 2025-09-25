@@ -29,13 +29,15 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         private readonly int _fingerprintTtlInSeconds;
 
+        private readonly ILogger _logger;
         private readonly IAppSettings _appSettings;
         private readonly IRedisMultiplexDbService _redisService;
         private readonly IMassTransitProducer _massTransitProducer;
         private readonly IDeviceService _deviceService;
 
-        public LinkingService(IAppSettings appSettings, IRedisMultiplexDbService redisMultiplexDbService, IMassTransitProducer massTransitProducer, IDeviceService deviceService)
+        public LinkingService(ILogger logger, IAppSettings appSettings, IRedisMultiplexDbService redisMultiplexDbService, IMassTransitProducer massTransitProducer, IDeviceService deviceService)
         {
+            _logger = logger;
             _appSettings = appSettings;
             _redisService = redisMultiplexDbService;
             _massTransitProducer = massTransitProducer;
@@ -98,41 +100,49 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         public async Task<bool> LinkingOnExpired(string hashkey)
         {
-            if ( string.IsNullOrEmpty(hashkey) || !hashkey.Contains(':'))
+            try
             {
-                return false;
-            }
-            var (sessionKey, dbIndex) = ParseSessionKey(hashkey);
-            var redisDb = _redisService.GetDatabase(dbIndex);
+                if (string.IsNullOrEmpty(hashkey) || !hashkey.Contains(':'))
+                {
+                    return false;
+                }
+                var (sessionKey, dbIndex) = ParseSessionKey(hashkey);
+                var redisDb = _redisService.GetDatabase(dbIndex);
 
-            var (fingerprint4RedisValue, fingerprint5RedisValue, transactionRedisValue) = await GetFingerprintData(redisDb, sessionKey);
+                var (fingerprint4RedisValue, fingerprint5RedisValue, transactionRedisValue) = await GetFingerprintData(redisDb, sessionKey);
 
-            if (transactionRedisValue.IsNullOrEmpty)
-            {
+                if (transactionRedisValue.IsNullOrEmpty)
+                {
+                    await _redisService.HashDeleteAsync(redisDb, sessionKey);
+                    return false;
+                }
+
+                var fingerprint4 = new APFingerprintModel();
+                if (!fingerprint4RedisValue.IsNullOrEmpty)
+                {
+                    fingerprint4 = JsonSerializer.Deserialize<APFingerprintModel>(fingerprint4RedisValue);
+                }
+
+                var fingerprint5 = new APFingerprintModel();
+                if (!fingerprint5RedisValue.IsNullOrEmpty)
+                {
+                    fingerprint5 = JsonSerializer.Deserialize<APFingerprintModel>(fingerprint5RedisValue);
+                }
+
+                var transactionRequest = JsonSerializer.Deserialize<TransactionRequest>(transactionRedisValue);
+
+                var messageQueue = BuildMessageQueue(transactionRequest, fingerprint4, fingerprint5);
+
+                await _massTransitProducer.SendAsync(messageQueue, _appSettings.QueueName);
+
                 await _redisService.HashDeleteAsync(redisDb, sessionKey);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await _logger.ErrorAsync("Error in LinkingOnExpired", ex);
                 return false;
             }
-
-            var fingerprint4 = new APFingerprintModel();
-            if (!fingerprint4RedisValue.IsNullOrEmpty)
-            {
-                fingerprint4 = JsonSerializer.Deserialize<APFingerprintModel>(fingerprint4RedisValue);
-            }
-
-            var fingerprint5 = new APFingerprintModel();
-            if (!fingerprint5RedisValue.IsNullOrEmpty)
-            {
-                fingerprint5 = JsonSerializer.Deserialize<APFingerprintModel>(fingerprint5RedisValue);
-            }
-
-            var transactionRequest = JsonSerializer.Deserialize<TransactionRequest>(transactionRedisValue);
-
-            var messageQueue = BuildMessageQueue(transactionRequest, fingerprint4, fingerprint5);
-
-            await _massTransitProducer.SendAsync(messageQueue, _appSettings.QueueName);
-
-            await _redisService.HashDeleteAsync(redisDb, sessionKey);
-            return true;
         }
 
         public APFingerprintModel LinkFingerprintsAttributes(APFingerprintModel?[] fingerprints)
