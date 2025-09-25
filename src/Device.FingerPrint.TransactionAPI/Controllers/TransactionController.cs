@@ -41,18 +41,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         [HttpPost("APFP/InsertTransaction")]
         public async Task<IActionResult> InsertTransactionAPFPAsync(TransactionRequest request)
         {
-            try
-            {
-                if (!appSettings.Environment.Equals("production", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    await redisMultiplexDbService.DefaultDatabase.HashIncrementAsync($"TransactionAPI::{request.Account}::{request.TransDate:dd-MM-yyyy}", "TotalTransaction", 1);
-                }
-                await redisMultiplexDbService.DefaultDatabase.HashIncrementAsync("TransactionAPI", "InsertTransaction", 1);
-            }
-            catch (Exception ex)
-            {
-                await logger.ErrorAsync("Error in Counter Insert Transaction APFP", ex);
-            }
+            await CountTransaction(request);
 
             try
             {
@@ -150,6 +139,22 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             };
 
             await massTransitProducer.SendAsync(dataEvent, appSettings.QueueName);
+        }
+
+        private async Task CountTransaction(TransactionRequest request)
+        {
+            try
+            {
+                if (!appSettings.Environment.Equals("production", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    await redisMultiplexDbService.DefaultDatabase.HashIncrementAsync($"TransactionAPI::{request.Account}::{request.TransDate:dd-MM-yyyy}", "TotalTransaction", 1);
+                }
+                await redisMultiplexDbService.DefaultDatabase.HashIncrementAsync("TransactionAPI", "InsertTransaction", 1);
+            }
+            catch (Exception ex)
+            {
+                await logger.ErrorAsync("Error in Counter Insert Transaction APFP", ex);
+            }
         }
     }
 }
