@@ -147,7 +147,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             {
                 if (!appSettings.Environment.Equals("production", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    await redisMultiplexDbService.DefaultDatabase.HashIncrementAsync($"TransactionAPI::{request.Account}::{request.TransDate:dd-MM-yyyy}", "TotalTransaction", 1);
+                    await redisMultiplexDbService.DefaultDatabase.HashIncrementAsync($"TransactionAPI::{request.Account}::{request.TransDate}", "TotalTransaction", 1);
+                    await redisMultiplexDbService.DefaultDatabase.KeyExpireAsync($"TransactionAPI::{request.Account}::{request.TransDate}", TimeSpan.FromDays(1));
                 }
                 await redisMultiplexDbService.DefaultDatabase.HashIncrementAsync("TransactionAPI", "InsertTransaction", 1);
             }
