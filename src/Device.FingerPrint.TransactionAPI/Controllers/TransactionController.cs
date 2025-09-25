@@ -43,6 +43,10 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         {
             try
             {
+                if (!appSettings.Environment.Equals("production", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    await redisMultiplexDbService.DefaultDatabase.HashIncrementAsync($"TransactionAPI::{request.Account}::{request.TransDate:dd-MM-yyyy}", "TotalTransaction", 1);
+                }
                 await redisMultiplexDbService.DefaultDatabase.HashIncrementAsync("TransactionAPI", "InsertTransaction", 1);
             }
             catch (Exception ex)
