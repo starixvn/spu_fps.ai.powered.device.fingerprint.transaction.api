@@ -33,11 +33,11 @@ namespace Device.FingerPrint.TransactionAPI.Services
             if(!pushedToQueue)
             {
                 var transactionJson = JsonSerializer.Serialize(transaction);
-                await _redisService.TransactionDatabase.SortedSetAddAsync(transaction.SessionKey, transactionJson, transaction.TransDate.Ticks);
-                await _redisService.ShadowDatabase.SortedSetAddAsync("TransactionExpireTime", transaction.SessionKey, DateTimeOffset.Now.AddSeconds(_transactionTtlInSeconds).Ticks);
+                var guid = Guid.NewGuid().ToString();
+                await _redisService.TransactionDatabase.HashSetAsync(transaction.SessionKey, guid, transactionJson);
+                await _redisService.TransactionDatabase.KeyExpireAsync(transaction.SessionKey, TimeSpan.FromSeconds(_transactionTtlInSeconds));
+                await _redisService.ShadowDatabase.SortedSetAddAsync("TransactionExpireTime", $"{transaction.SessionKey}:{guid}", DateTimeOffset.Now.AddSeconds(_transactionTtlInSeconds).Ticks);
             }
-
-            await _linkingService.LinkingOnInsert(transaction.SessionKey, checkOnExpired: true);
         }
     }
 }

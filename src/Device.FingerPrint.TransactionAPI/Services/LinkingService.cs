@@ -1,6 +1,6 @@
-﻿using Device.FingerPrint.Model;
-using Device.FingerPrint.Models;
+﻿using Device.FingerPrint.Models;
 using Device.FingerPrint.TransactionAPI.Queue;
+using Newtonsoft.Json.Linq;
 using StackExchange.Redis;
 using System.Text.Json;
 
@@ -8,7 +8,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 {
     public interface ILinkingService
     {
-        Task<bool> LinkingOnInsert(string sessionKey, bool checkOnExpired = false);
+        Task<bool> LinkingOnInsert(string sessionKey);
 
         Task<bool> LinkingOnInsert(TransactionModel transaction, bool requiredFullDetails = false);
     }
@@ -29,42 +29,31 @@ namespace Device.FingerPrint.TransactionAPI.Services
             _massTransitProducer = massTransitProducer;
         }
 
-        public async Task<bool> LinkingOnInsert(string sessionKey, bool checkOnExpired = false)
+        public async Task<bool> LinkingOnInsert(string sessionKey)
         {
-            var transactionsRedisValue = await _redisService.TransactionDatabase.SortedSetRangeByRankAsync(sessionKey);
+            var transactionsRedisValue = await _redisService.TransactionDatabase.HashGetAllAsync(sessionKey);
 
             if (!transactionsRedisValue.Any())
             {
                 return false;
             }    
 
-            var transactions = transactionsRedisValue
-                .Select(value => JsonSerializer.Deserialize<TransactionModel>(value))
-                .Where(tr => tr != null)
-                .ToList();
-
-            foreach (var transaction in transactions)
+            foreach (var value in transactionsRedisValue)
             {
-                if(transaction == null)
+                if (value.Value.IsNullOrEmpty)
                 {
                     continue;
                 }
 
-                if(checkOnExpired)
+                var transaction = JsonSerializer.Deserialize<TransactionModel>(value.Value);
+                if (transaction == null)
                 {
-                    if((DateTimeOffset.Now - transaction.TransDate).TotalSeconds > _appSettings.RedisSettings.TransactionTTLInSeconds)
-                    {
-                        await _redisService.TransactionDatabase.SortedSetRemoveAsync(sessionKey, JsonSerializer.Serialize(transaction), CommandFlags.FireAndForget);
-                        await LinkingOnInsert(transaction, requiredFullDetails: false);
-                    }
-                    else
-                    {
-                        return true;
-                    }
+                    continue;
                 }
-                else
+
+                if (await LinkingOnInsert(transaction, requiredFullDetails: true))
                 {
-                    await LinkingOnInsert(transaction, requiredFullDetails: true);
+                    await _redisService.TransactionDatabase.HashDeleteAsync(transaction.SessionKey, value.Name, CommandFlags.FireAndForget);
                 }
             }
             return true;
@@ -96,7 +85,6 @@ namespace Device.FingerPrint.TransactionAPI.Services
             var messageQueue = BuildMessageQueue(transaction, fingerprint4, fingerprint5);
             await _massTransitProducer.SendAsync(messageQueue, _appSettings.QueueName);
 
-            await _redisService.TransactionDatabase.SortedSetRemoveAsync(transaction.SessionKey, JsonSerializer.Serialize(transaction), CommandFlags.FireAndForget);
             return true;
         }
 

@@ -1,5 +1,4 @@
-﻿using Device.FingerPrint.Model;
-using Device.FingerPrint.Models;
+﻿using Device.FingerPrint.Models;
 using Device.FingerPrint.TransactionAPI.Helpers;
 using Device.FingerPrint.TransactionAPI.Model;
 using Fanex.Logging;

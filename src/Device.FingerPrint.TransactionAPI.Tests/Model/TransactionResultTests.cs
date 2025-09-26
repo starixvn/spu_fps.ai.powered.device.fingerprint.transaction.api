@@ -1,4 +1,4 @@
-using Device.FingerPrint.Model;
+using Device.FingerPrint.Models;
 using FluentAssertions;
 using Xunit;
 

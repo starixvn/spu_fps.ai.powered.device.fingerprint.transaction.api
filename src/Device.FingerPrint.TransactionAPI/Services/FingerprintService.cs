@@ -1,4 +1,4 @@
-﻿using Device.FingerPrint.Model;
+﻿using Device.FingerPrint.Models;
 using StackExchange.Redis;
 
 namespace Device.FingerPrint.TransactionAPI.Services

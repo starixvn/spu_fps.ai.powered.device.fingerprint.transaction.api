@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Device.FingerPrint.Model
+namespace Device.FingerPrint.Models
 {
     public class FingerprintRequest
     {

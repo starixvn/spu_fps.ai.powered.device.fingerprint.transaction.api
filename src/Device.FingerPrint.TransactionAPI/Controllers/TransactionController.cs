@@ -1,5 +1,4 @@
-﻿using Device.FingerPrint.Model;
-using Device.FingerPrint.Models;
+﻿using Device.FingerPrint.Models;
 using Device.FingerPrint.TransactionAPI.Queue;
 using Device.FingerPrint.TransactionAPI.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -148,7 +147,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 SessionKey = request.SessionKey,
                 TransDate = request.TransDate,
                 IsNewFlow = isNewFlow,
-                DeviceInfo = deviceInfo
+                DeviceInfo = deviceInfo,
+                Device = deviceModel
             };
         }
 

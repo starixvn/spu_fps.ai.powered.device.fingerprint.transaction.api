@@ -1,5 +1,4 @@
-﻿using Device.FingerPrint.Model;
-using StackExchange.Redis;
+﻿using StackExchange.Redis;
 using System.Text.Json;
 
 namespace Device.FingerPrint.TransactionAPI.Services
@@ -23,8 +22,6 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
     public class RedisMultiplexDbService : IRedisMultiplexDbService
     {
-        private readonly IConnectionMultiplexer _connectionMultiplexer;
-
         private readonly IDatabase defaultDatabase;
         private readonly IDatabase shadowDatabase;
         private readonly IDatabase fp4Database;
@@ -34,13 +31,13 @@ namespace Device.FingerPrint.TransactionAPI.Services
         public RedisMultiplexDbService(IConfiguration configuration, IAppSettings appSettings)
         {
             var redisSettings = appSettings.RedisSettings;
-            _connectionMultiplexer = ConnectionMultiplexer.Connect(redisSettings.ConfigurationOptions);
+            var connectionMultiplexer = ConnectionMultiplexer.Connect(redisSettings.ConfigurationOptions);
 
-            defaultDatabase = _connectionMultiplexer.GetDatabase();
-            shadowDatabase = _connectionMultiplexer.GetDatabase(redisSettings.ShadowDatabase);
-            fp4Database = _connectionMultiplexer.GetDatabase(redisSettings.FP4Database);
-            fp5Database = _connectionMultiplexer.GetDatabase(redisSettings.FP5Database);
-            transactionDatabase = _connectionMultiplexer.GetDatabase(redisSettings.TransactionDatabase);
+            defaultDatabase = connectionMultiplexer.GetDatabase();
+            shadowDatabase = connectionMultiplexer.GetDatabase(redisSettings.ShadowDatabase);
+            fp4Database = connectionMultiplexer.GetDatabase(redisSettings.FP4Database);
+            fp5Database = connectionMultiplexer.GetDatabase(redisSettings.FP5Database);
+            transactionDatabase = connectionMultiplexer.GetDatabase(redisSettings.TransactionDatabase);
             
         }
         public IDatabase DefaultDatabase => defaultDatabase;

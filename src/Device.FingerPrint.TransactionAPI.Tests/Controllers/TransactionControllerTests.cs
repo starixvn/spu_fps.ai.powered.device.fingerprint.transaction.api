@@ -1,4 +1,4 @@
-using Device.FingerPrint.Model;
+using Device.FingerPrint.Models;
 using Device.FingerPrint.TransactionAPI.Controllers;
 using Device.FingerPrint.TransactionAPI.Queue;
 using Device.FingerPrint.TransactionAPI.Services;

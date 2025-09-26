@@ -1,4 +1,4 @@
-﻿using Device.FingerPrint.Model;
+﻿using Device.FingerPrint.Models;
 using Device.FingerPrint.TransactionAPI.Queue;
 using Device.FingerPrint.TransactionAPI.Services;
 using FluentAssertions;
@@ -14,7 +14,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
         private readonly Mock<IAppSettings> _mockAppSettings;
         private readonly Mock<IRedisMultiplexDbService> _mockRedisService;
         private readonly Mock<IDatabase> _mockRedisDatabase;
-        private readonly Mock<IBatch> _mockBatch;
         private readonly Mock<IMassTransitProducer> _mockMassTransitProducer;
 
         private readonly LinkingService _linkingService;
@@ -32,7 +31,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             Graphic = "GraphicData",
         };
 
-        private readonly TransactionRequest transactionMockData = new TransactionRequest()
+        private readonly TransactionModel transactionMockData = new TransactionModel()
         {
             Account = "testAccount",
             Di = "testDi",
@@ -44,7 +43,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             _mockAppSettings = new Mock<IAppSettings>();
             _mockRedisService = new Mock<IRedisMultiplexDbService>();
             _mockRedisDatabase = new Mock<IDatabase>();
-            _mockBatch = new Mock<IBatch>();
             _mockMassTransitProducer = new Mock<IMassTransitProducer>();
 
             var redisSettings = new RedisSettings
@@ -59,7 +57,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             _mockRedisService.Setup(r => r.FP4Database).Returns(_mockRedisDatabase.Object);
             _mockRedisService.Setup(r => r.FP5Database).Returns(_mockRedisDatabase.Object);
             _mockRedisService.Setup(r => r.TransactionDatabase).Returns(_mockRedisDatabase.Object);
-            _mockRedisDatabase.Setup(db => db.CreateBatch(It.IsAny<object>())).Returns(_mockBatch.Object);
             _linkingService = new LinkingService(_mockAppSettings.Object, _mockRedisService.Object, _mockMassTransitProducer.Object);
         }
 
@@ -77,6 +74,28 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             // Assert
             result.Should().BeFalse();
             _mockMassTransitProducer.Verify(m => m.SendAsync(It.IsAny<MessageQueue>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public void BuildMessageQueue_ShouldReturnCorrectModel()
+        {
+            // Arrange
+            var expected = new APFingerprintModel
+            {
+                Audio = fp4MockData.Audio,
+                Browser = fp4MockData.Browser,
+                Graphic = fp5MockData.Graphic,
+                Hardware = fp4MockData.Hardware,
+                Preferences = fp4MockData.Preferences
+            };
+
+            // Act
+            var actual = _linkingService.BuildMessageQueue(transactionMockData, fp4MockData, fp5MockData);
+
+            // Assert
+            actual.Should().NotBeNull();
+            actual.Fingerprint.Should().BeEquivalentTo(expected);
+            actual.Account.Should().BeEquivalentTo(transactionMockData.Account);
         }
 
         [Fact]

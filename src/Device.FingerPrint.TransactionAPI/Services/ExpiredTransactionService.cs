@@ -1,5 +1,4 @@
 ﻿using Device.FingerPrint.Models;
-using StackExchange.Redis;
 using System.Text.Json;
 
 namespace Device.FingerPrint.TransactionAPI.Services
@@ -40,28 +39,24 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
                 totalItems++;
 
-                var sessionKey = redisValue.Value.Element.ToString();
+                var key = redisValue.Value.Element.ToString();
+                var sessionKey = key.Substring(0, key.LastIndexOf(':'));
+                var guid = key.Substring(key.LastIndexOf(':') + 1);
 
-                var transactionsRedisValue = await _redisService.TransactionDatabase.SortedSetRangeByRankAsync(sessionKey);
+                var transactionsRedisValue = await _redisService.TransactionDatabase.HashGetAsync(sessionKey, guid);
 
-                if (!transactionsRedisValue.Any())
+                if (transactionsRedisValue.IsNullOrEmpty)
                 {
                     continue;
                 }
 
-                var transactions = transactionsRedisValue
-                    .Select(value => JsonSerializer.Deserialize<TransactionModel>(value))
-                    .Where(tr => tr != null)
-                    .ToList();
-                foreach (var transaction in transactions)
+                var transaction = JsonSerializer.Deserialize<TransactionModel>(transactionsRedisValue);
+                if (transaction == null)
                 {
-                    if (transaction == null)
-                    {
-                        continue;
-                    }
-
-                    await _linkingService.LinkingOnInsert(transaction, requiredFullDetails: false);
+                    continue;
                 }
+
+                await _linkingService.LinkingOnInsert(transaction);
             }
         }
     }

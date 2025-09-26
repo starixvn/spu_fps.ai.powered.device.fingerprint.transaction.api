@@ -1,4 +1,4 @@
-﻿using Device.FingerPrint.Model;
+﻿using Device.FingerPrint.Models;
 using Device.FingerPrint.TransactionAPI.Queue;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
