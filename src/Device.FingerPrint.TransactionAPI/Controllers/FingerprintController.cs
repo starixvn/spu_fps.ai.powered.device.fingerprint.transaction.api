@@ -10,11 +10,11 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
     public class FingerprintController : ControllerBase
     {
         private readonly ILogger _logger;
-        private readonly ILinkingService _linkingService;
-        public FingerprintController(ILogger logger, ILinkingService linkingService)
+        private readonly IFingerprintService _fingerprintService;
+        public FingerprintController(ILogger logger, IFingerprintService fingerprintService)
         {
             _logger = logger;
-            _linkingService = linkingService;
+            _fingerprintService = fingerprintService;
         }
 
         [HttpPost("APFP/InsertFP4")]
@@ -23,9 +23,19 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             try
             {
                 var decodedRequest = Base64.Decode(request);
+                if (string.IsNullOrEmpty(decodedRequest))
+                {
+                    return BadRequest("Request is empty after decoding.");
+                }
+
                 var fingerprintRequest = JsonSerializer.Deserialize<FingerprintRequest>(decodedRequest);
 
-                var response = await _linkingService.InsertFingerprint(fingerprintRequest.SessionKey, _linkingService.FP4_REDIS_KEY, fingerprintRequest.Fingerprint);
+                if (fingerprintRequest == null)
+                {
+                    return BadRequest("Invalid request format.");
+                }
+
+                var response = await _fingerprintService.InsertFP4(fingerprintRequest);
 
                 return Ok(response);
             }
@@ -41,9 +51,20 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         {
             try
             {
-                var fingerprintRequest = JsonSerializer.Deserialize<FingerprintRequest>(Base64.Decode(request));
+                var decodedRequest = Base64.Decode(request);
+                if(string.IsNullOrEmpty(decodedRequest))
+                {
+                    return BadRequest("Request is empty after decoding.");
+                }
 
-                var response = await _linkingService.InsertFingerprint(fingerprintRequest.SessionKey, _linkingService.FP5_REDIS_KEY, fingerprintRequest.Fingerprint);
+                var fingerprintRequest = JsonSerializer.Deserialize<FingerprintRequest>(decodedRequest);
+
+                if(fingerprintRequest == null)
+                {
+                    return BadRequest("Invalid request format.");
+                }
+
+                var response = await _fingerprintService.InsertFP5(fingerprintRequest);
 
                 return Ok(response);
             }

@@ -54,7 +54,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         private async Task<SubscriberModel> GetSubscriberInfoByCache(string cacheKey, string subName)
         {
-            var subscriber = await _redisService.HashGetAsync<SubscriberModel>(_redisService.DefaultDatabase, cacheKey);
+            var subscriber = await _redisService.GetAsync<SubscriberModel>(_redisService.DefaultDatabase, cacheKey);
             if (subscriber != null)
             {
                 return subscriber;
@@ -68,7 +68,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             var subscriber = await GetDataSubscriberAsync(subName);
             if (subscriber != null)
             {
-                await _redisService.HashSetAndExpireAsync(_redisService.DefaultDatabase, cacheKey, subscriber, 3600);
+                await _redisService.SetAndExpireAsync(_redisService.DefaultDatabase, cacheKey, subscriber, 3600);
             }
             return subscriber;
         }

@@ -66,18 +66,6 @@ LogManager.SetDefaultLogCategory("FPS-API")
                     })
            ]);
 
-var redisService = app.Services.GetRequiredService<IRedisMultiplexDbService>();
-var linkingService = app.Services.GetRequiredService<ILinkingService>();
-redisService.ShadowDatabase.Execute("CONFIG", "SET", "notify-keyspace-events", "Ex");
-
-var channel = $"__keyevent@{appSettings.RedisSettings.ShadowDatabase}__:expired";
-var redisSubscriber = redisService.GetSubscriber();
-#pragma warning disable S3257 // Declarations and initializations should be as concise as possible
-redisSubscriber.Subscribe(channel, async (channel, message) => {
-    await linkingService.LinkingOnExpired(message);
-});
-#pragma warning restore S3257 // Declarations and initializations should be as concise as possible
-
 app.UseSwagger();
 app.UseSwaggerUI();
 
@@ -120,7 +108,10 @@ static void RegisterServiceStatic(IServiceCollection services, IConfiguration co
     services.AddSingleton<IUMCacheService, UMCacheService>();
     services.AddSingleton<IUMRestClient, UMRestClient>();
     services.AddSingleton<IMaintenanceService, MaintenanceService>();
+    services.AddSingleton<IFingerprintService, FingerprintService>();
+    services.AddSingleton<ITransactionService, TransactionService>();
     services.AddSingleton<ILinkingService, LinkingService>();
+    services.AddSingleton<IExpiredTransactionService, ExpiredTransactionService>();
     services.AddSingleton<IDeviceService, DeviceService>();
 }
 

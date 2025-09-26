@@ -10,5 +10,7 @@ namespace Device.FingerPrint.Model
         [JsonPropertyName("fp")]
         public required APFingerprintModel Fingerprint { get; set; }
 
+        [JsonPropertyName("hs")]
+        public required string Hashed { get; set; }
     }
 }

@@ -10,87 +10,50 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         IDatabase ShadowDatabase { get; }
 
-        IDatabase GetDatabase(int db = -1); 
+        IDatabase FP4Database { get; }
 
-        IServer GetServer(string host, int port);
+        IDatabase FP5Database { get; }
 
-        ISubscriber GetSubscriber();
+        IDatabase TransactionDatabase { get; }
 
-        IConnectionMultiplexer GetConnection();
+        Task<bool> SetAndExpireAsync<T>(IDatabase db, string hashKey, T value, long expireInSecond);
 
-        Task<int> GetDbIndex(string sessionKey);
-
-        Task<bool> HashSetAndExpireAsync<T>(IDatabase db, string hashKey, T value, long expireInSecond);
-
-        Task HashSetAsync<T>(IDatabase db, string hashKey, string key, T value, bool isForceUpdate);
-
-        Task<bool> HashExistAsync<T>(IDatabase db, string hashKey, string key);
-
-        Task<T> HashGetAsync<T>(IDatabase db, string hashKey);
-
-        Task HashDeleteAsync(IDatabase db, string hashKey);
+        Task<T> GetAsync<T>(IDatabase db, string hashKey);
     }
 
     public class RedisMultiplexDbService : IRedisMultiplexDbService
     {
-        private static int _nextDbIndex;
         private readonly IConnectionMultiplexer _connectionMultiplexer;
-        private readonly RedisSettings _redisSettings;
 
         private readonly IDatabase defaultDatabase;
         private readonly IDatabase shadowDatabase;
+        private readonly IDatabase fp4Database;
+        private readonly IDatabase fp5Database;
+        private readonly IDatabase transactionDatabase;
 
         public RedisMultiplexDbService(IConfiguration configuration, IAppSettings appSettings)
         {
-            _redisSettings = appSettings.RedisSettings;
-            _connectionMultiplexer = ConnectionMultiplexer.Connect(_redisSettings.ConfigurationOptions);
+            var redisSettings = appSettings.RedisSettings;
+            _connectionMultiplexer = ConnectionMultiplexer.Connect(redisSettings.ConfigurationOptions);
 
             defaultDatabase = _connectionMultiplexer.GetDatabase();
-            shadowDatabase = _connectionMultiplexer.GetDatabase(_redisSettings.ShadowDatabase);
+            shadowDatabase = _connectionMultiplexer.GetDatabase(redisSettings.ShadowDatabase);
+            fp4Database = _connectionMultiplexer.GetDatabase(redisSettings.FP4Database);
+            fp5Database = _connectionMultiplexer.GetDatabase(redisSettings.FP5Database);
+            transactionDatabase = _connectionMultiplexer.GetDatabase(redisSettings.TransactionDatabase);
             
         }
         public IDatabase DefaultDatabase => defaultDatabase;
 
         public IDatabase ShadowDatabase => shadowDatabase;
 
-        public IConnectionMultiplexer GetConnection()
-        {
-            return _connectionMultiplexer;
-        }
+        public IDatabase FP4Database => fp4Database;
 
-        public IDatabase GetDatabase(int db = -1)
-        {
-            return _connectionMultiplexer.GetDatabase(db);
-        }
+        public IDatabase FP5Database => fp5Database;
 
-        public IServer GetServer(string host, int port)
-        {
-            return _connectionMultiplexer.GetServer(host, port);
-        }
+        public IDatabase TransactionDatabase => transactionDatabase;
 
-        public ISubscriber GetSubscriber()
-        {
-            return _connectionMultiplexer.GetSubscriber();
-        }
-
-        public async Task<int> GetDbIndex(string sessionKey)
-        {
-            foreach (var dbIndex in _redisSettings.AvailableDatabases)
-            {
-                var hashKey = $"{sessionKey}:{dbIndex}";
-                
-                var hashValue = await shadowDatabase.StringGetAsync(hashKey);
-                if (!hashValue.IsNullOrEmpty)
-                {
-                    return dbIndex;
-                }
-            }
-
-            return _redisSettings.AvailableDatabases[
-                Interlocked.Increment(ref _nextDbIndex) % _redisSettings.AvailableDatabases.Count];
-        }
-
-        public async Task<bool> HashSetAndExpireAsync<T>(IDatabase db, string hashKey, T value, long expireInSecond)
+        public async Task<bool> SetAndExpireAsync<T>(IDatabase db, string hashKey, T value, long expireInSecond)
         {
             var isSet = await db.StringSetAsync(hashKey, JsonSerializer.Serialize(value));
             if (isSet)
@@ -100,26 +63,16 @@ namespace Device.FingerPrint.TransactionAPI.Services
             return false;
         }
 
-        public async Task HashSetAsync<T>(IDatabase db, string hashKey, string key, T value, bool isForceUpdate)
-        {
-            await db.HashSetAsync(hashKey, key, JsonSerializer.Serialize(value), when: isForceUpdate ? When.Always : When.NotExists);
-        }
-
-        public Task<bool> HashExistAsync<T>(IDatabase db, string hashKey, string key)
-        {
-            return db.HashExistsAsync(hashKey, key);
-        }
-
-        public async Task<T> HashGetAsync<T>(IDatabase db, string hashKey)
+        public async Task<T> GetAsync<T>(IDatabase db, string hashKey)
         {
             var value = await db.StringGetAsync(hashKey);
 
-            return JsonSerializer.Deserialize<T>(value);
-        }
+            if (value.IsNullOrEmpty)
+            {
+                return default(T);
+            }
 
-        public async Task HashDeleteAsync(IDatabase db, string hashKey)
-        {
-            await db.KeyDeleteAsync(hashKey);
+            return JsonSerializer.Deserialize<T>(value);
         }
     }
 }

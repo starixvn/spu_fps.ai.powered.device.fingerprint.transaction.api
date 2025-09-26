@@ -1,4 +1,5 @@
 ﻿using Device.FingerPrint.Model;
+using Device.FingerPrint.Models;
 using Device.FingerPrint.TransactionAPI.Queue;
 using Device.FingerPrint.TransactionAPI.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -13,29 +14,34 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
     {
         private readonly IMaintenanceService maintenanceService;
         private readonly ILogger logger;
-        private readonly ILinkingService linkingService;
+        private readonly ITransactionService transactionService;
         private readonly IDeviceService deviceService;
         private readonly IMassTransitProducer massTransitProducer;
         private readonly IAppSettings appSettings;
         private readonly IRedisMultiplexDbService redisMultiplexDbService;
+        private readonly IExpiredTransactionService expiredTransactionService;
 
+#pragma warning disable S107 // Methods should not have too many parameters
         public TransactionController(
             IMaintenanceService maintenanceService,
             ILogger logger,
-            ILinkingService linkingService,
+            ITransactionService transactionService,
             IDeviceService deviceService,
             IMassTransitProducer massTransitProducer,
             IAppSettings appSettings,
-            IRedisMultiplexDbService redisMultiplexDbService
+            IRedisMultiplexDbService redisMultiplexDbService,
+            IExpiredTransactionService expiredTransactionService
             )
+#pragma warning restore S107 // Methods should not have too many parameters
         {
             this.maintenanceService = maintenanceService;
             this.logger = logger;
-            this.linkingService = linkingService;
+            this.transactionService = transactionService;
             this.deviceService = deviceService;
             this.massTransitProducer = massTransitProducer;
             this.appSettings = appSettings;
             this.redisMultiplexDbService = redisMultiplexDbService;
+            this.expiredTransactionService = expiredTransactionService;
         }
 
         [HttpPost("APFP/InsertTransaction")]
@@ -45,34 +51,11 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
 
             try
             {
-                
-                var di = request.Di ?? request.__di;
+                var transaction = TransformTransactionModel(request);
 
-                var deviceInfo = deviceService.GetDeviceInfo(di);
-                if (string.IsNullOrEmpty(deviceInfo.UserAgent))
+                if (!transaction.IsNewFlow)
                 {
-                    deviceInfo.UserAgent = request.UserAgent;
-                }
-
-                if (!string.IsNullOrEmpty(request.Bi))
-                {
-                    deviceInfo.BotD = deviceService.TransformBotdModel(request.Bi);
-                }
-
-                var isNewFlow = true;
-                if(deviceInfo is not null && !string.IsNullOrEmpty(deviceInfo.Version))
-                {
-                    var majorVersion = deviceInfo.Version.Split('.').FirstOrDefault();
-                    if(int.TryParse(majorVersion, out int ver) && ver < 3)
-                    {
-                        isNewFlow = false;
-                    }
-                }
-
-                if (!isNewFlow)
-                {
-                    var deviceModel = TransformDeviceModel(request);
-                    await PushToQueueAsync(request, deviceModel, deviceInfo);
+                    await PushToQueueAsync(transaction);
 
                     return Ok();
                 }
@@ -82,9 +65,9 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                     return BadRequest("SessionKey is required");
                 }
 
-                var response = await linkingService.InsertTransaction(request.SessionKey, request);
+                await transactionService.InsertTransaction(transaction);
 
-                return Ok(response);
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -92,7 +75,22 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 return BadRequest();
             }
         }
-        
+
+        [HttpPost("APFP/ScanExpiredTransaction")]
+        public async Task<IActionResult> ScanExpiredTransactionAsync(int pageSize = 100)
+        {
+            try
+            {
+                await expiredTransactionService.ScanExpiredTransaction(pageSize);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                await logger.ErrorAsync("Error in Scan Expired Transaction", ex);
+                return BadRequest();
+            }
+        }
+
         [HttpGet]
         [Route("FPS/TestUM")]
         public UnderMaintenanceTime TestUM()
@@ -100,7 +98,61 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             return maintenanceService.GetUnderMaintenanceTime();
         }
 
-        private static DeviceModel TransformDeviceModel(TransactionRequest transRequest)
+        private TransactionModel TransformTransactionModel(TransactionRequest request)
+        {
+            var di = request.Di ?? request.__di;
+
+            var deviceInfo = deviceService.GetDeviceInfo(di);
+            if (string.IsNullOrEmpty(deviceInfo.UserAgent))
+            {
+                deviceInfo.UserAgent = request.UserAgent;
+            }
+
+            if (!string.IsNullOrEmpty(request.Bi))
+            {
+                deviceInfo.BotD = deviceService.TransformBotdModel(request.Bi);
+            }
+
+            var isNewFlow = true;
+            if (deviceInfo is not null && !string.IsNullOrEmpty(deviceInfo.Version))
+            {
+                var majorVersion = deviceInfo.Version.Split('.').FirstOrDefault();
+                if (int.TryParse(majorVersion, out int ver) && ver < 3)
+                {
+                    isNewFlow = false;
+                }
+            }
+
+            var deviceModel = TransformDeviceModel(request);
+
+            return new TransactionModel
+            {
+                Account = request.Account,
+                Action = request.Action,
+                ActionResult = request.ActionResult,
+                AcceptsTypes = request.AcceptsTypes,
+                Platform = request.Platform,
+                UserAgent = request.UserAgent,
+                Screen = request.Screen,
+                Ip = request.Ip,
+                FakeIp = request.FakeIp,
+                Url = request.Url,
+                Di = di,
+                Bi = request.Bi,
+                Token = request.Token,
+                DetecasAnalysis = request.DetecasAnalysis,
+                Subscriber = request.Subscriber,
+                SubscriberId = request.SubscriberId,
+                LoginTime = request.LoginTime,
+                CaptchaResult = request.CaptchaResult,
+                SessionKey = request.SessionKey,
+                TransDate = request.TransDate,
+                IsNewFlow = isNewFlow,
+                DeviceInfo = deviceInfo
+            };
+        }
+
+        private DeviceModel TransformDeviceModel(TransactionRequest transRequest)
         {
             return new DeviceModel
             {
@@ -116,26 +168,26 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             };
         }
 
-        private async Task PushToQueueAsync(TransactionRequest transactionRequest, DeviceModel deviceModel, DeviceInfoModel deviceInfo)
+        private async Task PushToQueueAsync(TransactionModel transaction)
         {
             var dataEvent = new MessageQueue
             {
-                Account = transactionRequest.Account,
-                Device = deviceModel,
-                Action = transactionRequest.Action,
-                ActionResult = transactionRequest.ActionResult,
-                Subscriber = transactionRequest.Subscriber,
-                SubscriberId = transactionRequest.SubscriberId,
-                IP = transactionRequest.Ip,
-                FakeIP = transactionRequest.FakeIp,
-                TransDate = transactionRequest.TransDate,
+                Account = transaction.Account,
+                Device = transaction.Device,
+                Action = transaction.Action,
+                ActionResult = transaction.ActionResult,
+                Subscriber = transaction.Subscriber,
+                SubscriberId = transaction.SubscriberId,
+                IP = transaction.Ip,
+                FakeIP = transaction.FakeIp,
+                TransDate = transaction.TransDate,
                 SubscriberDate = DateTimeOffset.Now,
-                Token = transactionRequest.Token,
+                Token = transaction.Token,
                 Recaptcha = "",
-                SessionKey = transactionRequest.SessionKey,
-                BotD = transactionRequest.Bi,
-                DeviceInfo = deviceInfo,
-                IsNewFlow = transactionRequest.IsNewFlow ?? false,
+                SessionKey = transaction.SessionKey,
+                BotD = transaction.Bi,
+                DeviceInfo = transaction.DeviceInfo,
+                IsNewFlow = transaction.IsNewFlow,
             };
 
             await massTransitProducer.SendAsync(dataEvent, appSettings.QueueName);

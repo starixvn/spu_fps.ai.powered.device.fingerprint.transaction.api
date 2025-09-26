@@ -105,7 +105,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 SubscriberName = subscriberName
             };
 
-            _mockRedisService.Setup(x => x.HashGetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync(subscriberModel);
 
             // Act
@@ -190,7 +190,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 SubscriberName = subscriberName
             };
 
-            _mockRedisService.Setup(x => x.HashGetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync(cachedSubscriber);
 
             // Act
@@ -200,7 +200,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             result.Should().Be(TransactionResult.Success);
             transactionRequest.SubscriberId.Should().Be(456);
 
-            _mockRedisService.Verify(x => x.HashGetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey), Times.Once);
+            _mockRedisService.Verify(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey), Times.Once);
             _mockHttpMessageHandler.Protected().Verify(
                 "SendAsync",
                 Times.Never(),
@@ -221,7 +221,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 Subscriber = subscriberName
             };
 
-            _mockRedisService.Setup(x => x.HashGetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ThrowsAsync(new Exception("Redis connection failed"));
 
             MockHttpCall(HttpStatusCode.OK, "{'SubscriberId': 500, 'SubscriberName': 'subscriberWithRedisError'}");
@@ -253,7 +253,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 SubscriberName = subscriberName
             };
 
-            _mockRedisService.Setup(x => x.HashGetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync(subscriberModel);
 
             // Act
@@ -276,7 +276,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 Subscriber = subscriberName
             };
 
-            _mockRedisService.Setup(x => x.HashGetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync((SubscriberModel?)null);
 
             MockHttpCall(HttpStatusCode.OK, "{'SubscriberId': 501, 'SubscriberName': 'fallbackSubscriber'}");
@@ -288,7 +288,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             result.Should().Be(TransactionResult.Success);
             transactionRequest.SubscriberId.Should().Be(501);
 
-            _mockRedisService.Verify(x => x.HashGetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey), Times.Once);
+            _mockRedisService.Verify(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey), Times.Once);
             _mockHttpMessageHandler.Protected().Verify(
                 "SendAsync",
                 Times.Once(),
@@ -314,7 +314,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 SubscriberName = subscriberName
             };
 
-            _mockRedisService.Setup(x => x.HashGetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync(subscriberModel);
 
             var tasks = new List<Task>();
@@ -363,7 +363,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 SubscriberName = longSubscriberName
             };
 
-            _mockRedisService.Setup(x => x.HashGetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync(subscriberModel);
 
             // Act
@@ -393,7 +393,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 SubscriberName = specialCharSubscriber
             };
 
-            _mockRedisService.Setup(x => x.HashGetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync(subscriberModel);
 
             // Act

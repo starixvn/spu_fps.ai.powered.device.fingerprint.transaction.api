@@ -15,31 +15,34 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
     {
         private readonly Mock<IMaintenanceService> _mockMaintenanceService;
         private readonly Mock<ILogger> _mockLogger;
-        private readonly Mock<ILinkingService> _mockLinkingService;
+        private readonly Mock<ITransactionService> _mockTransactionService;
         private readonly Mock<IDeviceService> _mockDeviceService;
         private readonly Mock<IMassTransitProducer> _mockMassitProducer;
         private readonly Mock<IAppSettings> _mockAppSettings;
         private readonly Mock<IRedisMultiplexDbService> _mockRedisMultiplexDbService;
+        private readonly Mock<IExpiredTransactionService> _mockExpiredTransactionService;
         private readonly TransactionController _controller;
 
         public TransactionControllerTests()
         {
             _mockMaintenanceService = new Mock<IMaintenanceService>();
             _mockLogger = new Mock<ILogger>();
-            _mockLinkingService = new Mock<ILinkingService>();
+            _mockTransactionService = new Mock<ITransactionService>();
             _mockDeviceService = new Mock<IDeviceService>();
             _mockMassitProducer = new Mock<IMassTransitProducer>();
             _mockAppSettings = new Mock<IAppSettings>();
             _mockRedisMultiplexDbService = new Mock<IRedisMultiplexDbService>();
+            _mockExpiredTransactionService = new Mock<IExpiredTransactionService>();
 
             _controller = new TransactionController(
                 _mockMaintenanceService.Object,
                 _mockLogger.Object,
-                _mockLinkingService.Object,
+                _mockTransactionService.Object,
                 _mockDeviceService.Object,
                 _mockMassitProducer.Object,
                 _mockAppSettings.Object,
-                _mockRedisMultiplexDbService.Object);
+                _mockRedisMultiplexDbService.Object,
+                _mockExpiredTransactionService.Object);
         }
 
 
@@ -140,7 +143,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             var result = await _controller.InsertTransactionAPFPAsync(transactionRequest);
 
             // Assert
-            result.Should().BeOfType<OkObjectResult>();
+            result.Should().BeOfType<OkResult>();
         }
     }
 }
