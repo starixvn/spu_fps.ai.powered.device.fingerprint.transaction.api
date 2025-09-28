@@ -1,4 +1,5 @@
 ﻿using Device.FingerPrint.Models;
+using StackExchange.Redis;
 using System.Text.Json;
 
 namespace Device.FingerPrint.TransactionAPI.Services
@@ -56,7 +57,10 @@ namespace Device.FingerPrint.TransactionAPI.Services
                     continue;
                 }
 
-                await _linkingService.LinkingOnInsert(transaction);
+                if(await _linkingService.LinkingOnInsert(transaction))
+                {
+                    await _redisService.TransactionDatabase.HashDeleteAsync(sessionKey, guid, CommandFlags.FireAndForget);
+                }
             }
         }
     }
