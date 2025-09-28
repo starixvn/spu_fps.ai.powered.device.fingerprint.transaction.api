@@ -20,7 +20,11 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
         public FingerprintServiceTests()
         {
             var appSettingsMock = new Mock<IAppSettings>();
-            appSettingsMock.Setup(a => a.RedisSettings.FingerprintTTLInSeconds).Returns(3600);
+            var redisSettings = new RedisSettings
+            {
+                FingerprintTTLInSeconds = 3600
+            };
+            appSettingsMock.Setup(a => a.RedisSettings).Returns(redisSettings);
             _redisServiceMock = new Mock<IRedisMultiplexDbService>();
             _linkingServiceMock = new Mock<ILinkingService>();
             _fingerprintService = new FingerprintService(
