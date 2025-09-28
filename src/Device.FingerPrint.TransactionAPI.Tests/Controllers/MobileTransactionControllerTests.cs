@@ -1,5 +1,5 @@
 using Device.FingerPrint.TransactionAPI.Controllers;
-using Device.FingerPrint.Models;
+using Device.FingerPrint.Model;
 using Device.FingerPrint.TransactionAPI.Queue;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;

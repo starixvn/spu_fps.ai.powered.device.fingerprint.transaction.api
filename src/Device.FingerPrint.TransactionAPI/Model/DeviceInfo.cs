@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Device.FingerPrint.Models
+namespace Device.FingerPrint.Model
 {
     public class DeviceInfo
     {

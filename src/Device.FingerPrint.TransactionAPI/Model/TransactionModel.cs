@@ -1,4 +1,4 @@
-﻿namespace Device.FingerPrint.Models
+﻿namespace Device.FingerPrint.Model
 {
     public class TransactionModel
     {
