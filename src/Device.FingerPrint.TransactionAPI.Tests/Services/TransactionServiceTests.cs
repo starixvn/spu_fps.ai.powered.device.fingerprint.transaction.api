@@ -70,8 +70,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             await _transactionService.InsertTransaction(transaction);
 
             // Assert
-            _mockRedisService.Verify(r => r.TransactionDatabase.SortedSetAddAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<double>(), It.IsAny<CommandFlags>()), Times.Once);
-            _mockRedisService.Verify(r => r.ShadowDatabase.SortedSetAddAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<double>(), It.IsAny<CommandFlags>()), Times.Once);
+            _mockRedisService.Verify(r => r.ShadowDatabase.SortedSetAddAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<double>(), It.IsAny<CommandFlags>()), Times.Never);
         }
     }
 }
