@@ -127,6 +127,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 SessionKey = transaction.SessionKey,
                 BotD = transaction.Bi,
                 Fingerprint = LinkFingerprintsAttributes([fingerprint4, fingerprint5]),
+                DeviceInfo = transaction.DeviceInfo,
                 IsNewFlow = transaction.IsNewFlow
             };
 
