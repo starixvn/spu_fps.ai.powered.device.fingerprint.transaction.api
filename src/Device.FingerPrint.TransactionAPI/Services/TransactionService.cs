@@ -35,7 +35,6 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 var transactionJson = JsonSerializer.Serialize(transaction);
                 var guid = Guid.NewGuid().ToString();
                 await _redisService.TransactionDatabase.HashSetAsync(transaction.SessionKey, guid, transactionJson);
-                await _redisService.TransactionDatabase.KeyExpireAsync(transaction.SessionKey, TimeSpan.FromSeconds(_transactionTtlInSeconds));
                 await _redisService.ShadowDatabase.SortedSetAddAsync("TransactionExpireTime", $"{transaction.SessionKey}:{guid}", DateTimeOffset.Now.AddSeconds(_transactionTtlInSeconds).Ticks);
             }
         }
