@@ -10,12 +10,15 @@ namespace Device.FingerPrint.TransactionAPI.Services
     }
     public class ExpiredTransactionService : IExpiredTransactionService
     {
+        private readonly IAppSettings _appSettings;
         private readonly IRedisMultiplexDbService _redisService;
         private readonly ILinkingService _linkingService;
         public ExpiredTransactionService(
+            IAppSettings appSettings,
             IRedisMultiplexDbService redisMultiplexDbService,
             ILinkingService linkingService)
         {
+            _appSettings = appSettings;
             _redisService = redisMultiplexDbService;
             _linkingService = linkingService;
         }
@@ -25,7 +28,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             var totalItems = 0;
             while (totalItems < pageSize)
             {
-                var redisValue = await _redisService.ShadowDatabase.SortedSetPopAsync("TransactionExpireTime");
+                var redisValue = await _redisService.ShadowDatabase.SortedSetPopAsync(_appSettings.RedisSettings.ExpiredTransactionHashKey);
                 if (redisValue is null)
                 {
                     return;
@@ -34,7 +37,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 if(redisValue.Value.Score > DateTimeOffset.Now.Ticks)
                 {
                     // Not expired yet, re-add to sorted set
-                    await _redisService.ShadowDatabase.SortedSetAddAsync("TransactionExpireTime", redisValue.Value.Element, redisValue.Value.Score);
+                    await _redisService.ShadowDatabase.SortedSetAddAsync(_appSettings.RedisSettings.ExpiredTransactionHashKey, redisValue.Value.Element, redisValue.Value.Score);
                     return;
                 }
 

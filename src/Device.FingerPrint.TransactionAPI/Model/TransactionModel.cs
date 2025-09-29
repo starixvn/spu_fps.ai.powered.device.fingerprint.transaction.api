@@ -49,5 +49,7 @@
         public DeviceModel? Device { get; set; }
 
         public DeviceInfoModel? DeviceInfo { get; set; }
+
+        public Guid Guid { get; set; }
     }
 }

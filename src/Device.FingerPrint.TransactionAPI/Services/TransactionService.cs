@@ -11,7 +11,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
     public class TransactionService : ITransactionService
     {
         private readonly int _transactionTtlInSeconds;
-
+        private readonly string _expiredTransactionHashKey;
         private readonly IRedisMultiplexDbService _redisService;
         private readonly ILinkingService _linkingService;
 
@@ -24,6 +24,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             _linkingService = linkingService;
 
             _transactionTtlInSeconds = appSettings.RedisSettings.TransactionTTLInSeconds;
+            _expiredTransactionHashKey = appSettings.RedisSettings.ExpiredTransactionHashKey;
         }
 
         public async Task InsertTransaction(TransactionModel transaction)
@@ -32,10 +33,10 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
             if(!pushedToQueue)
             {
+                transaction.Guid = Guid.NewGuid();
                 var transactionJson = JsonSerializer.Serialize(transaction);
-                var guid = Guid.NewGuid().ToString();
-                await _redisService.TransactionDatabase.HashSetAsync(transaction.SessionKey, guid, transactionJson);
-                await _redisService.ShadowDatabase.SortedSetAddAsync("TransactionExpireTime", $"{transaction.SessionKey}:{guid}", DateTimeOffset.Now.AddSeconds(_transactionTtlInSeconds).Ticks);
+                await _redisService.TransactionDatabase.HashSetAsync(transaction.SessionKey, transaction.Guid.ToString(), transactionJson);
+                await _redisService.ShadowDatabase.SortedSetAddAsync(_expiredTransactionHashKey, $"{transaction.SessionKey}:{transaction.Guid}", DateTimeOffset.Now.AddSeconds(_transactionTtlInSeconds).Ticks);
             }
         }
     }

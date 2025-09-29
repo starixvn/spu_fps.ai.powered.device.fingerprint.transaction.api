@@ -9,6 +9,8 @@ namespace Device.FingerPrint.Model
         public int FP5Database { get; set; } = 10;
         public int TransactionDatabase { get; set; } = 10;
 
+        public string ExpiredTransactionHashKey { get; set; } = "TransactionExpireTime";
+
         public int TransactionTTLInSeconds { get; set; } = 90;
         public int FingerprintTTLInSeconds { get; set; } = 3 * 60 * 60;
     }
