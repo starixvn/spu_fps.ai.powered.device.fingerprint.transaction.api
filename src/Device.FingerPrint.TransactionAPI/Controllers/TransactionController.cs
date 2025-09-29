@@ -69,17 +69,17 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         }
 
         [HttpPost("APFP/ScanExpiredTransaction")]
-        public async Task<IActionResult> ScanExpiredTransactionAsync(int pageSize = 100)
+        public async Task<bool> ScanExpiredTransactionAsync([FromForm]int pageSize = 100)
         {
             try
             {
                 await expiredTransactionService.ScanExpiredTransaction(pageSize);
-                return Ok();
+                return true;
             }
             catch (Exception ex)
             {
                 await logger.ErrorAsync("Error in Scan Expired Transaction", ex);
-                return BadRequest();
+                return false;
             }
         }
 
