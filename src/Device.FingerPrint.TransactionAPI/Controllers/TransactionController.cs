@@ -112,13 +112,13 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 deviceInfo.BotD = deviceService.TransformBotdModel(request.Bi);
             }
 
-            var isNewFlow = true;
+            var isNewFlow = false;
             if (deviceInfo is not null && !string.IsNullOrEmpty(deviceInfo.Version))
             {
                 var majorVersion = deviceInfo.Version.Split('.').FirstOrDefault();
-                if (int.TryParse(majorVersion, out int ver) && ver < 3)
+                if (int.TryParse(majorVersion, out int ver) && ver >= 3)
                 {
-                    isNewFlow = false;
+                    isNewFlow = true;
                 }
             }
 
