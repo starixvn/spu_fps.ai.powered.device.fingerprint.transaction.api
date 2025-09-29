@@ -17,10 +17,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         private readonly IDeviceService deviceService;
         private readonly IMassTransitProducer massTransitProducer;
         private readonly IAppSettings appSettings;
-        private readonly IRedisMultiplexDbService redisMultiplexDbService;
         private readonly IExpiredTransactionService expiredTransactionService;
 
-#pragma warning disable S107 // Methods should not have too many parameters
         public TransactionController(
             IMaintenanceService maintenanceService,
             ILogger logger,
@@ -28,10 +26,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             IDeviceService deviceService,
             IMassTransitProducer massTransitProducer,
             IAppSettings appSettings,
-            IRedisMultiplexDbService redisMultiplexDbService,
             IExpiredTransactionService expiredTransactionService
             )
-#pragma warning restore S107 // Methods should not have too many parameters
         {
             this.maintenanceService = maintenanceService;
             this.logger = logger;
@@ -39,15 +35,12 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             this.deviceService = deviceService;
             this.massTransitProducer = massTransitProducer;
             this.appSettings = appSettings;
-            this.redisMultiplexDbService = redisMultiplexDbService;
             this.expiredTransactionService = expiredTransactionService;
         }
 
         [HttpPost("APFP/InsertTransaction")]
         public async Task<IActionResult> InsertTransactionAPFPAsync(TransactionRequest request)
         {
-            await CountTransaction(request);
-
             try
             {
                 var transaction = TransformTransactionModel(request);
@@ -191,23 +184,6 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             };
 
             await massTransitProducer.SendAsync(dataEvent, appSettings.QueueName);
-        }
-
-        private async Task CountTransaction(TransactionRequest request)
-        {
-            try
-            {
-                if (!appSettings.Environment.Equals("production", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    await redisMultiplexDbService.DefaultDatabase.HashIncrementAsync($"TransactionAPI::{request.Account}::{request.TransDate}", "TotalTransaction", 1);
-                    await redisMultiplexDbService.DefaultDatabase.KeyExpireAsync($"TransactionAPI::{request.Account}::{request.TransDate}", TimeSpan.FromDays(1));
-                }
-                await redisMultiplexDbService.DefaultDatabase.HashIncrementAsync("TransactionAPI", "InsertTransaction", 1);
-            }
-            catch (Exception ex)
-            {
-                await logger.ErrorAsync("Error in Counter Insert Transaction APFP", ex);
-            }
         }
     }
 }

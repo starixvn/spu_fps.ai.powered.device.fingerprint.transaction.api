@@ -19,7 +19,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         private readonly Mock<IDeviceService> _mockDeviceService;
         private readonly Mock<IMassTransitProducer> _mockMassitProducer;
         private readonly Mock<IAppSettings> _mockAppSettings;
-        private readonly Mock<IRedisMultiplexDbService> _mockRedisMultiplexDbService;
         private readonly Mock<IExpiredTransactionService> _mockExpiredTransactionService;
         private readonly TransactionController _controller;
 
@@ -31,7 +30,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             _mockDeviceService = new Mock<IDeviceService>();
             _mockMassitProducer = new Mock<IMassTransitProducer>();
             _mockAppSettings = new Mock<IAppSettings>();
-            _mockRedisMultiplexDbService = new Mock<IRedisMultiplexDbService>();
             _mockExpiredTransactionService = new Mock<IExpiredTransactionService>();
 
             _controller = new TransactionController(
@@ -41,7 +39,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
                 _mockDeviceService.Object,
                 _mockMassitProducer.Object,
                 _mockAppSettings.Object,
-                _mockRedisMultiplexDbService.Object,
                 _mockExpiredTransactionService.Object);
         }
 
