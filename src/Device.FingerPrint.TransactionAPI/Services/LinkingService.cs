@@ -53,7 +53,8 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 if (await LinkingOnInsert(transaction, requiredFullDetails: true))
                 {
                     await _redisService.TransactionDatabase.HashDeleteAsync(transaction.SessionKey, value.Name, CommandFlags.FireAndForget);
-                    await _redisService.ShadowDatabase.SortedSetRemoveAsync(_appSettings.RedisSettings.ExpiredTransactionHashKey, $"{transaction.SessionKey}:{transaction.Guid}", CommandFlags.FireAndForget);
+                    var key = $"{transaction.SessionKey}:{transaction.Guid}";
+                    await _redisService.ShadowDatabase.SortedSetRemoveAsync(_appSettings.RedisSettings.ExpiredTransactionHashKey, key, CommandFlags.FireAndForget);
                 }
             }
             return true;
