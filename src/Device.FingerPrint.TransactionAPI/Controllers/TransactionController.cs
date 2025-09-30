@@ -38,7 +38,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             this.expiredTransactionService = expiredTransactionService;
         }
 
-        [HttpPost("APFP/InsertTransaction")]
+        [HttpPost("FPS/InsertTransaction")]
         public async Task<IActionResult> InsertTransactionAPFPAsync(TransactionRequest request)
         {
             try
