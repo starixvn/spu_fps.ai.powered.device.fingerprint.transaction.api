@@ -1,6 +1,7 @@
 ﻿using Device.FingerPrint.TransactionAPI.Model;
 using Device.FingerPrint.TransactionAPI.Queue;
 using Device.FingerPrint.TransactionAPI.Services;
+using Fanex.Logging;
 using Microsoft.AspNetCore.Mvc;
 using ONEbook.UM.Models;
 using ONEbook.UM.Services;
@@ -72,6 +73,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         [HttpPost("FPS/InsertTransaction")]
         public IActionResult InsertTransactionAsync(TransactionRequest transRequest)
         {
+            logger.Info($"InsertTransaction: {transRequest.Account}");
             var deviceModel = TransformDeviceModel(transRequest);
 
             _ = PushToQueueAsync(transRequest, deviceModel);
