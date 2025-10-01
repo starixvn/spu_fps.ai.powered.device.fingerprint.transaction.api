@@ -52,7 +52,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                     return Ok();
                 }
 
-                if (string.IsNullOrEmpty(request.SessionKey))
+                var sessionKey = transaction?.DeviceInfo?.SessionKey ?? request.SessionKey;
+                if (string.IsNullOrEmpty(sessionKey))
                 {
                     return BadRequest("SessionKey is required");
                 }
