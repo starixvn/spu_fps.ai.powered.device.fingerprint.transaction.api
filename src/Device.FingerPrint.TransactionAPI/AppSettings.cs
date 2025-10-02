@@ -1,6 +1,5 @@
-﻿using System.ComponentModel;
-using Microsoft.Extensions.Configuration;
-using System;
+﻿using Device.FingerPrint.Model;
+using System.ComponentModel;
 
 namespace Device.FingerPrint.TransactionAPI
 {
@@ -16,6 +15,7 @@ namespace Device.FingerPrint.TransactionAPI
         string FPJSPortialAPI { get; }
         string JWTPassword { get; }
         bool JWTEnable { get; }
+        RedisSettings RedisSettings { get; }
     }
 
     public class AppSettings : IAppSettings
@@ -36,6 +36,7 @@ namespace Device.FingerPrint.TransactionAPI
             FPJSPortialAPI = GetValue<string>("FPJS-Portial-API");
             JWTPassword = GetValue<string>("JWT:Password");
             JWTEnable = GetValue<bool>("JWT:Enable");
+            RedisSettings = GetSection<RedisSettings>("Redis");
         }
 
         public string Environment { get; }
@@ -48,6 +49,7 @@ namespace Device.FingerPrint.TransactionAPI
         public string FPJSPortialAPI { get; }
         public string JWTPassword { get; }
         public bool JWTEnable { get; }
+        public RedisSettings RedisSettings { get; }
 
         public T GetValue<T>(string key)
         {
@@ -76,6 +78,16 @@ namespace Device.FingerPrint.TransactionAPI
             {
                 throw new InvalidCastException($"Key: {key}", ex);
             }
+        }
+
+        public T GetSection<T>(string key)
+        {
+            var section = configuration.GetSection(key);
+            if(section == null)
+            {
+                return default;
+            }
+            return section.Get<T>();
         }
     }
 }

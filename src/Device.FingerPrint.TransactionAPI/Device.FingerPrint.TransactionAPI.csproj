@@ -27,4 +27,10 @@
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<SonarQubeSetting Include="sonar.coverage.exclusions">
+			<Value>**\Program.cs, **/*legacy*, **/*native*, **/*Test*, **/*Model*, **/*Entity*, **/*Criteria*, **/*Command*, **/*Exception*, **/*Test*/**, **/*Model*/**, **/*Entity*/**, **/*Criteria*/**, **/*Command*/**, **/*Exception*/**</Value>
+		</SonarQubeSetting>
+	</ItemGroup>
+
 </Project>

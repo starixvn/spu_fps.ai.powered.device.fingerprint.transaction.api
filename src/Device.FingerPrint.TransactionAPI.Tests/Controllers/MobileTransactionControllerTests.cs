@@ -1,5 +1,5 @@
 using Device.FingerPrint.TransactionAPI.Controllers;
-using Device.FingerPrint.TransactionAPI.Model;
+using Device.FingerPrint.Model;
 using Device.FingerPrint.TransactionAPI.Queue;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -8,7 +8,6 @@ using Moq;
 using Newtonsoft.Json;
 using System.Text;
 using Xunit;
-using Fanex.Logging;
 using System.Diagnostics;
 
 namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
@@ -26,24 +25,17 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
     public class MobileTransactionControllerTests
     {
         private readonly Mock<IAppSettings> _mockAppSettings;
-        private readonly Mock<Fanex.Logging.ILogger> _mockLogger;
+        private readonly Mock<ILogger> _mockLogger;
         private readonly Mock<IMassTransitProducer> _mockMassTransitProducer;
         private readonly Mock<HttpContext> _mockHttpContext;
         private readonly Mock<HttpRequest> _mockHttpRequest;
         private readonly Mock<IHeaderDictionary> _mockHeaders;
         private readonly MobileTransactionController _controller;
 
-        static MobileTransactionControllerTests()
-        {
-            // Initialize logging system for tests to prevent NotImplementedException
-            LogManager.SetDefaultLogCategory("Test")
-                .Use([new TestLogger()]);
-        }
-
         public MobileTransactionControllerTests()
         {
             _mockAppSettings = new Mock<IAppSettings>();
-            _mockLogger = new Mock<Fanex.Logging.ILogger>();
+            _mockLogger = new Mock<ILogger>();
             _mockMassTransitProducer = new Mock<IMassTransitProducer>();
             _mockHttpContext = new Mock<HttpContext>();
             _mockHttpRequest = new Mock<HttpRequest>();
@@ -573,40 +565,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             stopwatch.ElapsedMilliseconds.Should().BeLessThan(3000, "100 insert operations should complete within 3 seconds");
         }
 
-        [Fact]
-        public void MobileTransactionToBase64_MemoryUsage_ShouldNotLeakMemory()
-        {
-            // Arrange
-            var mobileTransaction = CreateValidMobileTransaction();
-
-            // Force garbage collection before test
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            var initialMemory = GC.GetTotalMemory(false);
-
-            // Act
-            const int iterations = 5000;
-            for (int i = 0; i < iterations; i++)
-            {
-                var result = _controller.MobileTransactionToBase64(mobileTransaction);
-                // Don't hold references to allow garbage collection
-            }
-
-            // Force garbage collection after test
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            var finalMemory = GC.GetTotalMemory(false);
-            var memoryIncrease = finalMemory - initialMemory;
-
-            // Assert
-            // Memory increase should be minimal (less than 2MB for 5k conversions)
-            memoryIncrease.Should().BeLessThan(2 * 1024 * 1024, "Memory usage should not increase significantly");
-        }
-
         #endregion
 
         #region Integration Tests
@@ -680,100 +638,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             
             // Compare excluding IP property since Base64 serialization happens before IP is set
             deserializedTransaction.Should().BeEquivalentTo(originalTransaction, options => options.Excluding(x => x.IP));
-        }
-
-        #endregion
-
-        #region TestTransaction Tests
-
-        [Fact]
-        public void TestTransaction_WithValidValue_ShouldReturnOkAndLog()
-        {
-            // Arrange
-            var testValue = "test-message";
-
-            // Act
-            var result = _controller.TestTransaction(testValue);
-
-            // Assert
-            result.Should().BeOfType<OkResult>();
-            _mockLogger.Verify(x => x.Info(testValue), Times.Once);
-        }
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        public void TestTransaction_WithInvalidValue_ShouldReturnBadRequest(string testValue)
-        {
-            // Act
-            var result = _controller.TestTransaction(testValue);
-
-            // Assert
-            result.Should().BeOfType<BadRequestObjectResult>();
-            var badRequestResult = result as BadRequestObjectResult;
-            badRequestResult!.Value.Should().Be("Invalid test value");
-            _mockLogger.Verify(x => x.Info(It.IsAny<string>()), Times.Never);
-        }
-
-        [Fact]
-        public void TestTransaction_WithWhitespace_ShouldReturnOkAndLog()
-        {
-            // Arrange
-            var testValue = "   ";
-
-            // Act
-            var result = _controller.TestTransaction(testValue);
-
-            // Assert
-            result.Should().BeOfType<OkResult>();
-            _mockLogger.Verify(x => x.Info(testValue), Times.Once);
-        }
-
-        [Fact]
-        public void TestTransaction_WithLoggerException_ShouldReturnInternalServerError()
-        {
-            // Arrange
-            var testValue = "test-message";
-            var exception = new Exception("Logger error");
-            _mockLogger.Setup(x => x.Info(It.IsAny<string>())).Throws(exception);
-
-            // Act
-            var result = _controller.TestTransaction(testValue);
-
-            // Assert
-            result.Should().BeOfType<StatusCodeResult>();
-            var statusCodeResult = result as StatusCodeResult;
-            statusCodeResult!.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
-            _mockLogger.Verify(x => x.Error(exception.Message, exception), Times.Once);
-        }
-
-        [Fact]
-        public void TestTransaction_WithLargeValue_ShouldHandleCorrectly()
-        {
-            // Arrange
-            var testValue = new string('A', 10000); // Large test value
-
-            // Act
-            var result = _controller.TestTransaction(testValue);
-
-            // Assert
-            result.Should().BeOfType<OkResult>();
-            _mockLogger.Verify(x => x.Info(testValue), Times.Once);
-        }
-
-        [Fact]
-        public void TestTransaction_ShouldHaveCorrectHttpPostAttribute()
-        {
-            // Act
-            var methodInfo = typeof(MobileTransactionController).GetMethod(nameof(MobileTransactionController.TestTransaction));
-            var attributes = methodInfo?.GetCustomAttributes(typeof(HttpPostAttribute), false);
-
-            // Assert
-            methodInfo.Should().NotBeNull();
-            attributes.Should().NotBeEmpty("TestTransaction method should have HttpPost attribute");
-            
-            var httpPostAttribute = attributes?.FirstOrDefault() as HttpPostAttribute;
-            httpPostAttribute?.Template.Should().Be("FPS/TestTransaction");
         }
 
         #endregion

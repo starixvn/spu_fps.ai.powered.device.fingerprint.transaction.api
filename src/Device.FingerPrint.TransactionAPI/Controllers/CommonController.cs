@@ -1,4 +1,4 @@
-﻿using Device.FingerPrint.TransactionAPI.Model;
+﻿using Device.FingerPrint.Model;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 

@@ -2,7 +2,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
-namespace Device.FingerPrint.TransactionAPI.JWT
+namespace Device.FingerPrint.TransactionAPI.Middleware
 {
     public class CustomJWTMiddleware
     {

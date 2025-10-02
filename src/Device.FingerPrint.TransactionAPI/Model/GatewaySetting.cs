@@ -1,6 +1,4 @@
-﻿using Device.FingerPrint.TransactionAPI.Model;
-
-namespace Device.FingerPrint.TransactionAPI.Services
+﻿namespace Device.FingerPrint.Model
 {
     public interface IGatewaySetting
     {

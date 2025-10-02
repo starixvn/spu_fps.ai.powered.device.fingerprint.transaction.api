@@ -1,4 +1,5 @@
 using Device.FingerPrint.TransactionAPI.Queue;
+using Device.FingerPrint.TransactionAPI.Services;
 using FluentAssertions;
 using MassTransit;
 using Moq;

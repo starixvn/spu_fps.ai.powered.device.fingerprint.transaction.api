@@ -1,11 +1,10 @@
-﻿using Device.FingerPrint.TransactionAPI.Model;
+﻿using Device.FingerPrint.Model;
 using Device.FingerPrint.TransactionAPI.Queue;
 using Device.FingerPrint.TransactionAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using ONEbook.UM.Models;
 using ONEbook.UM.Services;
 using System.Globalization;
-using System.Text.Json;
 
 namespace Device.FingerPrint.TransactionAPI.Controllers
 {
@@ -13,73 +12,141 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
     public class TransactionController : ControllerBase
     {
         private readonly IMaintenanceService maintenanceService;
-        private readonly IAppSettings appSettings;
-        private readonly Fanex.Logging.ILogger logger;
-        private readonly ISubscriberService subscriberService;
+        private readonly ILogger logger;
+        private readonly ITransactionService transactionService;
+        private readonly IDeviceService deviceService;
         private readonly IMassTransitProducer massTransitProducer;
+        private readonly IAppSettings appSettings;
+        private readonly IExpiredTransactionService expiredTransactionService;
 
         public TransactionController(
             IMaintenanceService maintenanceService,
+            ILogger logger,
+            ITransactionService transactionService,
+            IDeviceService deviceService,
+            IMassTransitProducer massTransitProducer,
             IAppSettings appSettings,
-            Fanex.Logging.ILogger logger,
-            ISubscriberService subscriberService,
-            IMassTransitProducer massTransitProducer)
+            IExpiredTransactionService expiredTransactionService
+            )
         {
             this.maintenanceService = maintenanceService;
-            this.appSettings = appSettings;
             this.logger = logger;
-            this.subscriberService = subscriberService;
+            this.transactionService = transactionService;
+            this.deviceService = deviceService;
             this.massTransitProducer = massTransitProducer;
-        }
-
-        [HttpPost("FPS/AddTransaction")]
-        [HttpPost("FPS/AddTransactionVer2")]
-        [HttpPost("FPS/CheckTransaction")]
-        public async Task<IActionResult> CheckTransactionAsync(TransactionRequest transRequest)
-        {
-            var responseCode = TransactionResult.UnderMaintenance;
-
-            if (!IsMaintenance && !IsIgnoredSite(transRequest.Subscriber))
-            {
-                try
-                {
-                    responseCode = await subscriberService.ValidateAsync(transRequest);
-
-                    if (responseCode == TransactionResult.Success)
-                    {
-                        var deviceModel = TransformDeviceModel(transRequest);
-
-                        await PushToQueueAsync(transRequest, deviceModel);
-                    }
-                    else
-                    {
-                        var errorMessage = GetTransactionResponse(responseCode);
-                        await logger.ErrorAsync($"CheckTransactionAsync responseCode = {JsonSerializer.Serialize(errorMessage)} \nTransRequest: {JsonSerializer.Serialize(transRequest)}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex.Message, ex);
-
-                    responseCode = TransactionResult.Others;
-                }
-            }
-
-            var response = GetTransactionResponse(responseCode);
-            return Ok(response.ResultMessage);
+            this.appSettings = appSettings;
+            this.expiredTransactionService = expiredTransactionService;
         }
 
         [HttpPost("FPS/InsertTransaction")]
-        public IActionResult InsertTransactionAsync(TransactionRequest transRequest)
+        public async Task<IActionResult> InsertTransactionAPFPAsync(TransactionRequest request)
         {
-            var deviceModel = TransformDeviceModel(transRequest);
+            try
+            {
+                var transaction = TransformTransactionModel(request);
 
-            _ = PushToQueueAsync(transRequest, deviceModel);
+                if (!transaction.IsNewFlow)
+                {
+                    await PushToQueueAsync(transaction);
 
-            return Ok();
+                    return Ok();
+                }
+
+                var sessionKey = transaction?.DeviceInfo?.SessionKey ?? request.SessionKey;
+                if (string.IsNullOrEmpty(sessionKey))
+                {
+                    return BadRequest("SessionKey is required");
+                }
+
+                await transactionService.InsertTransaction(transaction);
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                await logger.ErrorAsync("Error in Insert Transaction", ex);
+                return BadRequest();
+            }
         }
 
-        private static DeviceModel TransformDeviceModel(TransactionRequest transRequest)
+        [HttpPost("APFP/ScanExpiredTransaction")]
+        public async Task<bool> ScanExpiredTransactionAsync([FromForm]int pageSize = 100)
+        {
+            try
+            {
+                await expiredTransactionService.ScanExpiredTransaction(pageSize);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await logger.ErrorAsync("Error in Scan Expired Transaction", ex);
+                return false;
+            }
+        }
+
+        [HttpGet]
+        [Route("FPS/TestUM")]
+        public UnderMaintenanceTime TestUM()
+        {
+            return maintenanceService.GetUnderMaintenanceTime();
+        }
+
+        private TransactionModel TransformTransactionModel(TransactionRequest request)
+        {
+            var di = request.Di ?? request.__di;
+
+            var deviceInfo = deviceService.GetDeviceInfo(di);
+            if (string.IsNullOrEmpty(deviceInfo.UserAgent))
+            {
+                deviceInfo.UserAgent = request.UserAgent;
+            }
+
+            if (!string.IsNullOrEmpty(request.Bi))
+            {
+                deviceInfo.BotD = deviceService.TransformBotdModel(request.Bi);
+            }
+
+            var isNewFlow = false;
+            if (deviceInfo is not null && !string.IsNullOrEmpty(deviceInfo.Version))
+            {
+                var majorVersion = deviceInfo.Version.Split('.').FirstOrDefault();
+                if (int.TryParse(majorVersion, out int ver) && ver >= 3)
+                {
+                    isNewFlow = true;
+                }
+            }
+
+            var deviceModel = TransformDeviceModel(request);
+
+            return new TransactionModel
+            {
+                Account = request.Account,
+                Action = request.Action,
+                ActionResult = request.ActionResult,
+                AcceptsTypes = request.AcceptsTypes,
+                Platform = request.Platform,
+                UserAgent = request.UserAgent,
+                Screen = request.Screen,
+                Ip = request.Ip,
+                FakeIp = request.FakeIp,
+                Url = request.Url,
+                Di = di,
+                Bi = request.Bi,
+                Token = request.Token,
+                DetecasAnalysis = request.DetecasAnalysis,
+                Subscriber = request.Subscriber,
+                SubscriberId = request.SubscriberId,
+                LoginTime = request.LoginTime,
+                CaptchaResult = request.CaptchaResult,
+                SessionKey = request.SessionKey,
+                TransDate = request.TransDate,
+                IsNewFlow = isNewFlow,
+                DeviceInfo = deviceInfo,
+                Device = deviceModel
+            };
+        }
+
+        private DeviceModel TransformDeviceModel(TransactionRequest transRequest)
         {
             return new DeviceModel
             {
@@ -95,66 +162,29 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             };
         }
 
-        private bool IsIgnoredSite(string site)
-        {
-            var ignoredSites = appSettings.IgnoredSites.Split(',');
-
-            if (ignoredSites[0].Equals("*", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            return Array.Exists(ignoredSites, s => string.Equals(s, site, StringComparison.OrdinalIgnoreCase));
-        }   
-
-        private async Task PushToQueueAsync(TransactionRequest transactionRequest, DeviceModel deviceModel)
+        private async Task PushToQueueAsync(TransactionModel transaction)
         {
             var dataEvent = new MessageQueue
             {
-                Account = transactionRequest.Account,
-                Device = deviceModel,
-                Action = transactionRequest.Action,
-                ActionResult = transactionRequest.ActionResult,
-                Subscriber = transactionRequest.Subscriber,
-                SubscriberId = transactionRequest.SubscriberId,
-                IP = transactionRequest.Ip,
-                FakeIP = transactionRequest.FakeIp,
-                TransDate = transactionRequest.TransDate,
+                Account = transaction.Account,
+                Device = transaction.Device,
+                Action = transaction.Action,
+                ActionResult = transaction.ActionResult,
+                Subscriber = transaction.Subscriber,
+                SubscriberId = transaction.SubscriberId,
+                IP = transaction.Ip,
+                FakeIP = transaction.FakeIp,
+                TransDate = transaction.TransDate,
                 SubscriberDate = DateTimeOffset.Now,
-                Token = transactionRequest.Token,
+                Token = transaction.Token,
                 Recaptcha = "",
-                SessionKey = transactionRequest.SessionKey,
-                BotD = transactionRequest.Bi,
+                SessionKey = transaction.SessionKey,
+                BotD = transaction.Bi,
+                DeviceInfo = transaction.DeviceInfo,
+                IsNewFlow = transaction.IsNewFlow,
             };
 
             await massTransitProducer.SendAsync(dataEvent, appSettings.QueueName);
-        }
-
-        private TransactionResponse GetTransactionResponse(string code)
-        {
-            return new TransactionResponse
-            {
-                ResultCode = code,
-                ResultMessage = TransactionResult.GetMessage(code)
-            };
-        }
-
-        private bool IsMaintenance
-        {
-            get
-            {
-                var downTime = maintenanceService.GetUnderMaintenanceTime();
-
-                return downTime.IsUnderMaintenanceTime || appSettings.IsUM;
-            }
-        }
-
-
-        [HttpGet]
-        [Route("FPS/TestUM")]
-        public UnderMaintenanceTime TestUM()
-        {
-            return maintenanceService.GetUnderMaintenanceTime();
         }
     }
 }

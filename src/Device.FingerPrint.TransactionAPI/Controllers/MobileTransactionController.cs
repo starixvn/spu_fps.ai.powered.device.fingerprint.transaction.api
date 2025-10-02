@@ -1,4 +1,4 @@
-﻿using Device.FingerPrint.TransactionAPI.Model;
+﻿using Device.FingerPrint.Model;
 using Device.FingerPrint.TransactionAPI.Queue;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -10,12 +10,12 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
     public class MobileTransactionController : ControllerBase
     {
         private readonly IAppSettings appSettings;
-        private readonly Fanex.Logging.ILogger logger;
+        private readonly ILogger logger;
         private readonly IMassTransitProducer massTransitProducer;
 
         public MobileTransactionController(
             IAppSettings appSettings,
-            Fanex.Logging.ILogger logger,
+            ILogger logger,
             IMassTransitProducer massTransitProducer)
         {
             this.appSettings = appSettings;
@@ -36,28 +36,6 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 transaction.IP = HttpContext.Request.Headers["Fps-Forwarded-For"].ToString();
 
                 PushToQueueAsync(transaction);
-
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex.Message, ex);
-
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
-        }
-
-        [HttpPost("FPS/TestTransaction")]
-        public IActionResult TestTransaction(string testValue)
-        {
-            if (string.IsNullOrEmpty(testValue))
-            {
-                return BadRequest("Invalid test value");
-            }
-
-            try
-            {
-                logger.Info(testValue);
 
                 return Ok();
             }

@@ -5,8 +5,8 @@ namespace Device.FingerPrint.TransactionAPI.Middleware
     public class ExceptionMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly Fanex.Logging.ILogger _logger;
-        public ExceptionMiddleware(RequestDelegate next, Fanex.Logging.ILogger logger)
+        private readonly ILogger _logger;
+        public ExceptionMiddleware(RequestDelegate next, ILogger logger)
         {
             _logger = logger;
             _next = next;

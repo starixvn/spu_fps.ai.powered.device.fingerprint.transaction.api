@@ -1,4 +1,4 @@
-﻿namespace Device.FingerPrint.TransactionAPI.Model
+﻿namespace Device.FingerPrint.Model
 {
     [Serializable]
     public class MessageQueue
@@ -14,8 +14,6 @@
         public string? IP { get; set; }
 
         public string? FakeIP { get; set; }
-
-        public IpInfoModel? IpInfo { get; set; }
 
         public string? Subscriber { get; set; }
 
@@ -34,5 +32,11 @@
         public string? BotD { get; set; }
 
         public MobileModel? Mobile { get; set; }
+
+        public APFingerprintModel? Fingerprint { get; set; }
+
+        public DeviceInfoModel DeviceInfo { get; set; }
+
+        public bool IsNewFlow { get; set; }
     }
 }

@@ -18,6 +18,7 @@ namespace Device.FingerPrint.TransactionAPI.Queue
         {
             this.bus = bus;
         }
+
         public void Send<T>(T data, string address)
         {
             var endpointTask = bus.GetSendEndpoint(new Uri(address));
@@ -30,6 +31,7 @@ namespace Device.FingerPrint.TransactionAPI.Queue
                 }
             });
         }
+
         public async Task SendAsync<T>(T data, string address)
         {
             var endpoint = await bus.GetSendEndpoint(new Uri(address));

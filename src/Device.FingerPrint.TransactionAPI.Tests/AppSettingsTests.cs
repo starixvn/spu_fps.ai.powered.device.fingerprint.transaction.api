@@ -1,4 +1,3 @@
-using Device.FingerPrint.TransactionAPI;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Moq;
@@ -409,6 +408,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests
             _configurationData["FPJS-Portial-API"] = "https://fpjs.test.com";
             _configurationData["JWT:Password"] = "testpassword";
             _configurationData["JWT:Enable"] = "true";
+            _configurationData["Redis:Database"] = "14";
         }
 
         #endregion

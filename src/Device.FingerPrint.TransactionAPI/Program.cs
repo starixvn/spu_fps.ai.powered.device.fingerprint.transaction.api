@@ -1,5 +1,5 @@
+using Device.FingerPrint.Model;
 using Device.FingerPrint.TransactionAPI;
-using Device.FingerPrint.TransactionAPI.JWT;
 using Device.FingerPrint.TransactionAPI.Middleware;
 using Device.FingerPrint.TransactionAPI.Queue;
 using Device.FingerPrint.TransactionAPI.Services;
@@ -14,11 +14,6 @@ using ONEbook.UM.Services;
 using ONEbook.UM.Transport;
 using Prometheus;
 using Sentry;
-using StackExchange.Redis.Extensions.Core;
-using StackExchange.Redis.Extensions.Core.Abstractions;
-using StackExchange.Redis.Extensions.Core.Configuration;
-using StackExchange.Redis.Extensions.Core.Implementations;
-using StackExchange.Redis.Extensions.MsgPack;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,13 +32,11 @@ builder.Configuration.AddEnvironmentVariables();
 var configuration = builder.Configuration;
 var services = builder.Services;
 
-var appSettings = new AppSettings(configuration);
-services.AddSingleton<IAppSettings>(appSettings);
-var gatewaySetting = new GatewaySetting(configuration);
-services.AddSingleton<IGatewaySetting>(gatewaySetting);
+builder.Services.AddSingleton<IAppSettings, AppSettings>();
+builder.Services.AddSingleton<IGatewaySetting, GatewaySetting>();
+services.AddSingleton<IRedisMultiplexDbService, RedisMultiplexDbService>();
 
 RegisterServiceStatic(services, configuration);
-RegisterRedisStatic(services, configuration);
 RegisterMassTransitStatic(services, configuration);
 
 builder.Services.AddSwaggerGen();
@@ -54,6 +47,16 @@ builder.Services.AddCors(p => p.AddPolicy("corsapp", builder =>
 }));
 
 
+
+builder.Services.AddControllers();
+builder.Services.AddHealthChecks();
+builder.Services.AddHttpClient();
+
+var app = builder.Build();
+
+var appSettings = app.Services.GetRequiredService<IAppSettings>();
+var gatewaySetting = app.Services.GetRequiredService<IGatewaySetting>();
+
 LogManager.SetDefaultLogCategory("FPS-API")
            .Use(
            [
@@ -62,12 +65,6 @@ LogManager.SetDefaultLogCategory("FPS-API")
                         Dsn = new Dsn(appSettings.SentryDsn)
                     })
            ]);
-
-builder.Services.AddControllers();
-builder.Services.AddHealthChecks();
-builder.Services.AddHttpClient();
-
-var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -104,30 +101,18 @@ app.Run();
 
 static void RegisterServiceStatic(IServiceCollection services, IConfiguration configuration)
 {
-    services.AddSingleton<Fanex.Logging.ILogger, Logger>();
+    services.AddSingleton<ILogger, Logger>();
     services.AddSingleton<ISubscriberService, SubscriberService>();
     services.AddSingleton<IMassTransitProducer, MassTransitProducer>();
     services.AddSingleton(new UMClientConfiguration().Initialize(configuration));
     services.AddSingleton<IUMCacheService, UMCacheService>();
     services.AddSingleton<IUMRestClient, UMRestClient>();
     services.AddSingleton<IMaintenanceService, MaintenanceService>();
-}
-
-static void RegisterRedisStatic(IServiceCollection services, IConfiguration configuration)
-{
-    var redisConfiguration = configuration.GetSection("Redis").Get<RedisConfiguration>();
-
-    if (redisConfiguration is null)
-    {
-        throw new InvalidOperationException("Redis configuration section is missing from appsettings.");
-    }
-
-    services.AddSingleton(redisConfiguration);
-
-    services.AddSingleton<IRedisClient, RedisClient>();
-    services.AddSingleton<IRedisConnectionPoolManager, RedisConnectionPoolManager>();
-    services.AddSingleton<ISerializer, MsgPackObjectSerializer>();
-    services.AddSingleton<IRedisService, RedisService>();
+    services.AddSingleton<IFingerprintService, FingerprintService>();
+    services.AddSingleton<ITransactionService, TransactionService>();
+    services.AddSingleton<ILinkingService, LinkingService>();
+    services.AddSingleton<IExpiredTransactionService, ExpiredTransactionService>();
+    services.AddSingleton<IDeviceService, DeviceService>();
 }
 
 static void RegisterMassTransitStatic(IServiceCollection services, IConfiguration configuration)

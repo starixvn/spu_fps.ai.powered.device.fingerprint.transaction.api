@@ -1,17 +1,12 @@
+using Device.FingerPrint.Model;
 using Device.FingerPrint.TransactionAPI.Services;
-using Device.FingerPrint.TransactionAPI.Model;
 using FluentAssertions;
 using Moq;
-using Xunit;
-using Fanex.Logging;
-using System.Diagnostics;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Moq.Protected;
-using System.Threading;
+using StackExchange.Redis;
+using System.Diagnostics;
 using System.Net;
-using System;
-using System.Collections.Generic;
+using Xunit;
 
 namespace Device.FingerPrint.TransactionAPI.Tests.Services
 {
@@ -21,21 +16,14 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
     public class SubscriberServiceTests
     {
         private readonly Mock<IAppSettings> _mockAppSettings;
-        private readonly Mock<IRedisService> _mockRedisService;
+        private readonly Mock<IRedisMultiplexDbService> _mockRedisService;
         private readonly Mock<HttpMessageHandler> _mockHttpMessageHandler;
         private readonly SubscriberService _subscriberService;
-
-        static SubscriberServiceTests()
-        {
-            // Initialize logging system for tests to prevent NotImplementedException
-            LogManager.SetDefaultLogCategory("Test")
-                .Use([new TestLogger()]);
-        }
 
         public SubscriberServiceTests()
         {
             _mockAppSettings = new Mock<IAppSettings>();
-            _mockRedisService = new Mock<IRedisService>();
+            _mockRedisService = new Mock<IRedisMultiplexDbService>();
             _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
 
             var httpClient = new HttpClient(_mockHttpMessageHandler.Object);
@@ -117,7 +105,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 SubscriberName = subscriberName
             };
 
-            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync(subscriberModel);
 
             // Act
@@ -202,7 +190,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 SubscriberName = subscriberName
             };
 
-            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync(cachedSubscriber);
 
             // Act
@@ -211,8 +199,8 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             // Assert
             result.Should().Be(TransactionResult.Success);
             transactionRequest.SubscriberId.Should().Be(456);
-            
-            _mockRedisService.Verify(x => x.GetAsync<SubscriberModel>(cacheKey), Times.Once);
+
+            _mockRedisService.Verify(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey), Times.Once);
             _mockHttpMessageHandler.Protected().Verify(
                 "SendAsync",
                 Times.Never(),
@@ -233,7 +221,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 Subscriber = subscriberName
             };
 
-            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ThrowsAsync(new Exception("Redis connection failed"));
 
             MockHttpCall(HttpStatusCode.OK, "{'SubscriberId': 500, 'SubscriberName': 'subscriberWithRedisError'}");
@@ -265,7 +253,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 SubscriberName = subscriberName
             };
 
-            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync(subscriberModel);
 
             // Act
@@ -288,7 +276,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 Subscriber = subscriberName
             };
 
-            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync((SubscriberModel?)null);
 
             MockHttpCall(HttpStatusCode.OK, "{'SubscriberId': 501, 'SubscriberName': 'fallbackSubscriber'}");
@@ -299,8 +287,8 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             // Assert
             result.Should().Be(TransactionResult.Success);
             transactionRequest.SubscriberId.Should().Be(501);
-            
-            _mockRedisService.Verify(x => x.GetAsync<SubscriberModel>(cacheKey), Times.Once);
+
+            _mockRedisService.Verify(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey), Times.Once);
             _mockHttpMessageHandler.Protected().Verify(
                 "SendAsync",
                 Times.Once(),
@@ -326,7 +314,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 SubscriberName = subscriberName
             };
 
-            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync(subscriberModel);
 
             var tasks = new List<Task>();
@@ -375,7 +363,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 SubscriberName = longSubscriberName
             };
 
-            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync(subscriberModel);
 
             // Act
@@ -405,7 +393,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 SubscriberName = specialCharSubscriber
             };
 
-            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(cacheKey))
+            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync(subscriberModel);
 
             // Act
@@ -417,24 +405,5 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
         }
 
         #endregion
-    }
-
-    /// <summary>
-    /// Simple test logger implementation to prevent logging exceptions in tests
-    /// </summary>
-    internal class TestLogger : ILogEngine
-    {
-        public void Debug(string message, string? category = null) { }
-        public void Error(string message, string? category = null) { }
-        public void Info(string message, string? category = null) { }
-        public void Warning(string message, string? category = null) { }
-        public Task DebugAsync(string message, string? category = null) => Task.CompletedTask;
-        public Task ErrorAsync(string message, string? category = null) => Task.CompletedTask;
-        public Task InfoAsync(string message, string? category = null) => Task.CompletedTask;
-        public Task WarningAsync(string message, string? category = null) => Task.CompletedTask;
-        
-        public void Write(string message, TraceEventType eventType, string? category = null) { }
-        public Task WriteAsync(string message, TraceEventType eventType, string? category = null) => Task.CompletedTask;
-        public string RenderJavascriptLogger() => string.Empty;
     }
 }
