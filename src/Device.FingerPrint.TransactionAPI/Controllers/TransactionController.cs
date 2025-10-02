@@ -1,10 +1,10 @@
-﻿using Device.FingerPrint.Model;
+﻿using System.Globalization;
+using Device.FingerPrint.Model;
 using Device.FingerPrint.TransactionAPI.Queue;
 using Device.FingerPrint.TransactionAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using ONEbook.UM.Models;
 using ONEbook.UM.Services;
-using System.Globalization;
 
 namespace Device.FingerPrint.TransactionAPI.Controllers
 {
@@ -52,10 +52,11 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                     return Ok();
                 }
 
-                var sessionKey = transaction?.DeviceInfo?.SessionKey ?? request.SessionKey;
-                if (string.IsNullOrEmpty(sessionKey))
+                if (string.IsNullOrEmpty(transaction.SessionKey))
                 {
-                    return BadRequest("SessionKey is required");
+                    await PushToQueueAsync(transaction);
+
+                    return Ok();
                 }
 
                 await transactionService.InsertTransaction(transaction);
@@ -138,7 +139,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 SubscriberId = request.SubscriberId,
                 LoginTime = request.LoginTime,
                 CaptchaResult = request.CaptchaResult,
-                SessionKey = request.SessionKey,
+                SessionKey = deviceInfo?.SessionKey ?? request.SessionKey,
                 TransDate = request.TransDate,
                 IsNewFlow = isNewFlow,
                 DeviceInfo = deviceInfo,
