@@ -1,4 +1,6 @@
 ﻿using Device.FingerPrint.Model;
+using Device.FingerPrint.TransactionAPI.Helpers;
+using Device.FingerPrint.TransactionAPI.Model;
 using Device.FingerPrint.TransactionAPI.Queue;
 using Device.FingerPrint.TransactionAPI.Services;
 using Fanex.Logging.Extensions;
@@ -29,15 +31,34 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         }
 
         [HttpPost("FPS/InsertMobileTransaction")]
-        public async Task<IActionResult> InsertTransactionAsync(MobileTransactionModel transaction)
+        public async Task<IActionResult> InsertTransactionAsync(MobileTransactionRequest request)
         {
-            if (transaction == null)
+            if (request == null)
             {
-                return BadRequest("Invalid transaction data.");
+                return BadRequest();
             }
 
             try
             {
+                var transactionJson = Base64.NormalDecode(request.Transaction);
+                var transaction = JsonConvert.DeserializeObject<MobileTransactionModel>(transactionJson);
+                if (transaction == null)
+                {
+                    var message = new LogMessage("InsertMobileTransaction transaction is null")
+                        .AddMessage($"request {JsonConvert.SerializeObject(request)}");
+                    await logger.ErrorAsync(message.ToString());
+
+                    return BadRequest();
+                }
+
+                if (!string.IsNullOrEmpty(transaction.Exceptions))
+                {
+                    var message = new LogMessage("Mobile App SDK Occurs Exception")
+                        .AddMessage($"request {JsonConvert.SerializeObject(request)}");
+
+                    await logger.InfoAsync(message.ToString());
+                }
+
                 var isValidSubscriber = await subscriberService.ValidateAsync(transaction.Subscriber);
                 if (!isValidSubscriber)
                 {
@@ -45,10 +66,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                         .AddMessage($"transaction {JsonConvert.SerializeObject(transaction)}");
                     await logger.ErrorAsync(message.ToString());
 
-                    return Ok(new
-                    {
-                        StatusCode = System.Net.HttpStatusCode.BadRequest
-                    });
+                    return BadRequest();
                 }
 
                 transaction.TransDate = DateTimeOffset.Now.DateTime;

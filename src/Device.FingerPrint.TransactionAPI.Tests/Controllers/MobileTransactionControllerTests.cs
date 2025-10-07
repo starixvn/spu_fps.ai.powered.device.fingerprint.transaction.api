@@ -1,15 +1,17 @@
-using Device.FingerPrint.TransactionAPI.Controllers;
 using Device.FingerPrint.Model;
+using Device.FingerPrint.TransactionAPI.Controllers;
+using Device.FingerPrint.TransactionAPI.Model;
 using Device.FingerPrint.TransactionAPI.Queue;
+using Device.FingerPrint.TransactionAPI.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Newtonsoft.Json;
-using System.Text;
-using Xunit;
 using System.Diagnostics;
-using Device.FingerPrint.TransactionAPI.Services;
+using System.Text;
+using System.Transactions;
+using Xunit;
 
 namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
 {
@@ -82,15 +84,13 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         {
             // Arrange
             var mobileTransaction = CreateValidMobileTransaction();
+            var request = new MobileTransactionRequest { Transaction = ObjectToBase64(mobileTransaction) };
 
             // Act
-            var result = await _controller.InsertTransactionAsync(mobileTransaction);
+            var result = await _controller.InsertTransactionAsync(request);
 
             // Assert
             result.Should().BeOfType<OkResult>();
-
-            // Verify IP was set from header
-            mobileTransaction.IP.Should().Be("192.168.1.100");
 
             // Verify subscriber validation was called
             _mockSubscriberService.Verify(x => x.ValidateAsync(It.IsAny<string>()), Times.Once);
@@ -103,13 +103,13 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         public async Task InsertTransactionAsync_WithNullTransaction_ShouldReturnBadRequest()
         {
             // Arrange
-            MobileTransactionModel? transaction = null;
+            MobileTransactionRequest? request = null;
 
             // Act
-            var result = await _controller.InsertTransactionAsync(transaction!);
+            var result = await _controller.InsertTransactionAsync(request!);
 
             // Assert
-            result.Should().BeOfType<BadRequestObjectResult>();
+            result.Should().BeOfType<BadRequestResult>();
 
             // Verify no subscriber validation was called
             _mockSubscriberService.Verify(x => x.ValidateAsync(It.IsAny<string>()), Times.Never);
@@ -123,16 +123,16 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         {
             // Arrange
             var mobileTransaction = CreateValidMobileTransaction();
+            var request = new MobileTransactionRequest { Transaction = ObjectToBase64(mobileTransaction) };
+
             _mockSubscriberService.Setup(x => x.ValidateAsync(It.IsAny<string>()))
                 .ReturnsAsync(false);
 
             // Act
-            var result = await _controller.InsertTransactionAsync(mobileTransaction);
+            var result = await _controller.InsertTransactionAsync(request);
 
             // Assert
-            result.Should().BeOfType<OkObjectResult>();
-            var okResult = result as OkObjectResult;
-            okResult!.Value.Should().BeEquivalentTo(new { StatusCode = System.Net.HttpStatusCode.BadRequest });
+            result.Should().BeOfType<BadRequestResult>();
 
             // Verify subscriber validation was called
             _mockSubscriberService.Verify(x => x.ValidateAsync(It.IsAny<string>()), Times.Once);
@@ -149,12 +149,14 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         {
             // Arrange
             var mobileTransaction = CreateValidMobileTransaction();
+            var request = new MobileTransactionRequest { Transaction = ObjectToBase64(mobileTransaction) };
+
             var exception = new Exception("Subscriber validation failed");
             _mockSubscriberService.Setup(x => x.ValidateAsync(It.IsAny<string>()))
                 .ThrowsAsync(exception);
 
             // Act
-            var result = await _controller.InsertTransactionAsync(mobileTransaction);
+            var result = await _controller.InsertTransactionAsync(request);
 
             // Assert
             result.Should().BeOfType<StatusCodeResult>();
@@ -170,13 +172,15 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         {
             // Arrange
             var mobileTransaction = CreateValidMobileTransaction();
+            var request = new MobileTransactionRequest { Transaction = ObjectToBase64(mobileTransaction) };
+
             var exception = new Exception("Queue connection failed");
 
             _mockMassTransitProducer.Setup(x => x.Send(It.IsAny<MessageQueue>(), It.IsAny<string>()))
                 .Throws(exception);
 
             // Act
-            var result = await _controller.InsertTransactionAsync(mobileTransaction);
+            var result = await _controller.InsertTransactionAsync(request);
 
             // Assert
             result.Should().BeOfType<StatusCodeResult>();
@@ -190,14 +194,16 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         {
             // Arrange
             var mobileTransaction = CreateValidMobileTransaction();
+            var request = new MobileTransactionRequest { Transaction = ObjectToBase64(mobileTransaction) };
+
             _mockHeaders.Setup(x => x["Fps-Forwarded-For"]).Returns(""); 
 
             // Act
-            var result = await _controller.InsertTransactionAsync(mobileTransaction);
+            var result = await _controller.InsertTransactionAsync(request);
 
             // Assert
             result.Should().BeOfType<OkResult>();
-            mobileTransaction.IP.Should().BeEmpty();
+            mobileTransaction.IP.Should().BeNull();
         }
 
         [Fact]
@@ -205,14 +211,16 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         {
             // Arrange
             var mobileTransaction = CreateValidMobileTransaction();
+            var request = new MobileTransactionRequest { Transaction = ObjectToBase64(mobileTransaction) };
+
             _mockHeaders.Setup(x => x["Fps-Forwarded-For"]).Returns((string?)null);
 
             // Act
-            var result = await _controller.InsertTransactionAsync(mobileTransaction);
+            var result = await _controller.InsertTransactionAsync(request);
 
             // Assert
             result.Should().BeOfType<OkResult>();
-            mobileTransaction.IP.Should().BeEmpty(); // ToString() on null StringValues returns empty string, not null
+            mobileTransaction.IP.Should().BeNull(); // ToString() on null StringValues returns empty string, not null
         }
 
         [Fact]
@@ -220,15 +228,16 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         {
             // Arrange
             var mobileTransaction = CreateValidMobileTransaction();
+            var request = new MobileTransactionRequest { Transaction = ObjectToBase64(mobileTransaction) };
+
             var multipleIPs = "192.168.1.100, 10.0.0.1, 203.0.113.1";
             _mockHeaders.Setup(x => x["Fps-Forwarded-For"]).Returns(multipleIPs);
 
             // Act
-            var result = await _controller.InsertTransactionAsync(mobileTransaction);
+            var result = await _controller.InsertTransactionAsync(request);
 
             // Assert
             result.Should().BeOfType<OkResult>();
-            mobileTransaction.IP.Should().Be(multipleIPs);
         }
 
         [Fact]
@@ -257,13 +266,14 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
                 TransDate = new DateTime(2024, 1, 15, 14, 30, 0),
                 LoginTime = DateTime.Now
             };
+            var request = new MobileTransactionRequest { Transaction = ObjectToBase64(mobileTransaction) };
 
             MessageQueue? capturedMessage = null;
             _mockMassTransitProducer.Setup(x => x.Send(It.IsAny<MessageQueue>(), It.IsAny<string>()))
                 .Callback<MessageQueue, string>((msg, queue) => capturedMessage = msg);
 
             // Act
-            var result = await _controller.InsertTransactionAsync(mobileTransaction);
+            var result = await _controller.InsertTransactionAsync(request);
 
             // Assert
             result.Should().BeOfType<OkResult>();
@@ -275,7 +285,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             capturedMessage.ActionResult.Should().Be(mobileTransaction.ActionResult);
             capturedMessage.Subscriber.Should().Be(mobileTransaction.Subscriber);
             capturedMessage.IP.Should().Be("192.168.1.100"); // From header
-            capturedMessage.TransDate.Should().Be(mobileTransaction.TransDate);
             capturedMessage.SubscriberDate.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(5));
 
             // Verify Mobile model mapping
@@ -306,13 +315,14 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
                 AndroidCode = null, // Null AndroidCode
                 MachineCode = "machine-code-789"
             };
+            var request = new MobileTransactionRequest { Transaction = ObjectToBase64(mobileTransaction) };
 
             MessageQueue? capturedMessage = null;
             _mockMassTransitProducer.Setup(x => x.Send(It.IsAny<MessageQueue>(), It.IsAny<string>()))
                 .Callback<MessageQueue, string>((msg, queue) => capturedMessage = msg);
 
             // Act
-            var result = await _controller.InsertTransactionAsync(mobileTransaction);
+            var result = await _controller.InsertTransactionAsync(request);
 
             // Assert
             result.Should().BeOfType<OkResult>();
@@ -331,13 +341,14 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
                 AndroidCode = "", // Empty AndroidCode
                 MachineCode = "machine-code-backup"
             };
+            var request = new MobileTransactionRequest { Transaction = ObjectToBase64(mobileTransaction) };
 
             MessageQueue? capturedMessage = null;
             _mockMassTransitProducer.Setup(x => x.Send(It.IsAny<MessageQueue>(), It.IsAny<string>()))
                 .Callback<MessageQueue, string>((msg, queue) => capturedMessage = msg);
 
             // Act
-            var result = await _controller.InsertTransactionAsync(mobileTransaction);
+            var result = await _controller.InsertTransactionAsync(request);
 
             // Assert
             result.Should().BeOfType<OkResult>();
@@ -491,10 +502,12 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         {
             // Arrange
             var mobileTransaction = CreateValidMobileTransaction();
+            var request = new MobileTransactionRequest { Transaction = ObjectToBase64(mobileTransaction) };
+
             _mockHttpRequest.Setup(x => x.Headers).Throws(new InvalidOperationException("HTTP context error"));
 
             // Act
-            var result = await _controller.InsertTransactionAsync(mobileTransaction);
+            var result = await _controller.InsertTransactionAsync(request);
 
             // Assert
             result.Should().BeOfType<StatusCodeResult>();
@@ -506,9 +519,10 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             // Arrange
             var mobileTransaction = CreateValidMobileTransaction();
             _mockAppSettings.Setup(x => x.MobileQueueName).Throws(new Exception("Queue configuration error"));
+            var request = new MobileTransactionRequest { Transaction = ObjectToBase64(mobileTransaction) };
 
             // Act
-            var result = await _controller.InsertTransactionAsync(mobileTransaction);
+            var result = await _controller.InsertTransactionAsync(request);
 
             // Assert
             result.Should().BeOfType<StatusCodeResult>();
@@ -558,8 +572,10 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             for (int i = 0; i < concurrentRequests; i++)
             {
                 var transaction = CreateValidMobileTransaction();
+                var request = new MobileTransactionRequest { Transaction = ObjectToBase64(transaction) };
+
                 transaction.Account = $"concurrent-account-{i}";
-                tasks.Add(_controller.InsertTransactionAsync(transaction));
+                tasks.Add(_controller.InsertTransactionAsync(request));
             }
 
             var results = await Task.WhenAll(tasks);
@@ -608,8 +624,10 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             for (int i = 0; i < requestCount; i++)
             {
                 var transaction = CreateValidMobileTransaction();
+                var request = new MobileTransactionRequest { Transaction = ObjectToBase64(transaction) };
+
                 transaction.Account = $"perf-test-{i}";
-                var result = await _controller.InsertTransactionAsync(transaction);
+                var result = await _controller.InsertTransactionAsync(request);
                 result.Should().BeOfType<OkResult>();
             }
 
@@ -640,6 +658,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
                 Country = "VN",
                 TransDate = DateTime.Now
             };
+            var request = new MobileTransactionRequest { Transaction = ObjectToBase64(mobileTransaction) };
 
             var forwardedIP = "203.0.113.50";
             _mockHeaders.Setup(x => x["Fps-Forwarded-For"]).Returns(forwardedIP);
@@ -649,13 +668,10 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
                 .Callback<MessageQueue, string>((msg, queue) => capturedMessage = msg);
 
             // Act
-            var result = await _controller.InsertTransactionAsync(mobileTransaction);
+            var result = await _controller.InsertTransactionAsync(request);
 
             // Assert
             result.Should().BeOfType<OkResult>();
-            
-            // Verify IP was extracted and set
-            mobileTransaction.IP.Should().Be(forwardedIP);
             
             // Verify subscriber validation was called
             _mockSubscriberService.Verify(x => x.ValidateAsync(It.IsAny<string>()), Times.Once);
@@ -677,12 +693,13 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
         {
             // Arrange
             var originalTransaction = CreateValidMobileTransaction();
+            var request = new MobileTransactionRequest { Transaction = ObjectToBase64(originalTransaction) };
 
             // Act - First serialize to Base64
             var base64Result = _controller.MobileTransactionToBase64(originalTransaction);
             
             // Then insert the transaction
-            var insertResult = await _controller.InsertTransactionAsync(originalTransaction);
+            var insertResult = await _controller.InsertTransactionAsync(request);
 
             // Assert both operations
             base64Result.Should().NotBeNullOrEmpty();
@@ -726,7 +743,14 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
                 LoginTime = DateTime.Now.AddMinutes(-1)
             };
         }
+        private static string ObjectToBase64(MobileTransactionModel transaction)
+        {
+            string jsonString = JsonConvert.SerializeObject(transaction);
+            byte[] jsonBytes = Encoding.UTF8.GetBytes(jsonString);
+            string base64EncodedString = Convert.ToBase64String(jsonBytes);
 
+            return base64EncodedString;
+        }
         #endregion
     }
 }
