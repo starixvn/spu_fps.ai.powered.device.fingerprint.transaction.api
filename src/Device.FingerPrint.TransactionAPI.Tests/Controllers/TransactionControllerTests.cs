@@ -13,73 +13,37 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
 {
     public class TransactionControllerTests
     {
-        private readonly Mock<IMaintenanceService> _mockMaintenanceService;
         private readonly Mock<ILogger> _mockLogger;
         private readonly Mock<ITransactionService> _mockTransactionService;
         private readonly Mock<IDeviceService> _mockDeviceService;
         private readonly Mock<IMassTransitProducer> _mockMassitProducer;
         private readonly Mock<IAppSettings> _mockAppSettings;
         private readonly Mock<IExpiredTransactionService> _mockExpiredTransactionService;
+        private readonly Mock<ISubscriberService> _mockSubscriberService;
         private readonly TransactionController _controller;
 
         public TransactionControllerTests()
         {
-            _mockMaintenanceService = new Mock<IMaintenanceService>();
             _mockLogger = new Mock<ILogger>();
             _mockTransactionService = new Mock<ITransactionService>();
             _mockDeviceService = new Mock<IDeviceService>();
             _mockMassitProducer = new Mock<IMassTransitProducer>();
             _mockAppSettings = new Mock<IAppSettings>();
             _mockExpiredTransactionService = new Mock<IExpiredTransactionService>();
+            _mockSubscriberService = new Mock<ISubscriberService>();
+
+            _mockSubscriberService.Setup(s => s.ValidateAsync(It.IsAny<string>()))
+                .ReturnsAsync(true);
 
             _controller = new TransactionController(
-                _mockMaintenanceService.Object,
                 _mockLogger.Object,
                 _mockTransactionService.Object,
                 _mockDeviceService.Object,
                 _mockMassitProducer.Object,
                 _mockAppSettings.Object,
-                _mockExpiredTransactionService.Object);
+                _mockExpiredTransactionService.Object,
+                _mockSubscriberService.Object);
         }
-
-
-        #region TestUM Tests
-
-        [Fact]
-        public void TestUM_ShouldReturnMaintenanceTimeFromService()
-        {
-            // Arrange
-            var expectedMaintenanceTime = new UnderMaintenanceTime 
-            { 
-                IsUnderMaintenanceTime = true
-            };
-            
-            _mockMaintenanceService.Setup(x => x.GetUnderMaintenanceTime())
-                .Returns(expectedMaintenanceTime);
-
-            // Act
-            var result = _controller.TestUM();
-
-            // Assert
-            result.Should().BeEquivalentTo(expectedMaintenanceTime);
-            _mockMaintenanceService.Verify(x => x.GetUnderMaintenanceTime(), Times.Once);
-        }
-
-        [Fact]
-        public void TestUM_WithNullMaintenanceTime_ShouldReturnNull()
-        {
-            // Arrange
-            _mockMaintenanceService.Setup(x => x.GetUnderMaintenanceTime())
-                .Returns((UnderMaintenanceTime?)null);
-
-            // Act
-            var result = _controller.TestUM();
-
-            // Assert
-            result.Should().BeNull();
-        }
-
-        #endregion
 
         #region Helper Methods
 

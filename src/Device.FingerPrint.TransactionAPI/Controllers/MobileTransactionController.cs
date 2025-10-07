@@ -1,5 +1,7 @@
 ﻿using Device.FingerPrint.Model;
 using Device.FingerPrint.TransactionAPI.Queue;
+using Device.FingerPrint.TransactionAPI.Services;
+using Fanex.Logging.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.Text;
@@ -12,19 +14,22 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         private readonly IAppSettings appSettings;
         private readonly ILogger logger;
         private readonly IMassTransitProducer massTransitProducer;
+        private readonly ISubscriberService subscriberService;
 
         public MobileTransactionController(
             IAppSettings appSettings,
             ILogger logger,
-            IMassTransitProducer massTransitProducer)
+            IMassTransitProducer massTransitProducer,
+            ISubscriberService subscriberService)
         {
             this.appSettings = appSettings;
             this.logger = logger;
             this.massTransitProducer = massTransitProducer;
+            this.subscriberService = subscriberService;
         }
 
         [HttpPost("FPS/InsertMobileTransaction")]
-        public IActionResult InsertTransactionAsync(MobileTransactionModel transaction)
+        public async Task<IActionResult> InsertTransactionAsync(MobileTransactionModel transaction)
         {
             if (transaction == null)
             {
@@ -33,6 +38,20 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
 
             try
             {
+                var isValidSubscriber = await subscriberService.ValidateAsync(transaction.Subscriber);
+                if (!isValidSubscriber)
+                {
+                    var message = new LogMessage("InsertMobileTransaction Subscriber invalid")
+                        .AddMessage($"transaction {JsonConvert.SerializeObject(transaction)}");
+                    await logger.ErrorAsync(message.ToString());
+
+                    return Ok(new
+                    {
+                        StatusCode = System.Net.HttpStatusCode.BadRequest
+                    });
+                }
+
+                transaction.TransDate = DateTimeOffset.Now.DateTime;
                 transaction.IP = HttpContext.Request.Headers["Fps-Forwarded-For"].ToString();
 
                 PushToQueueAsync(transaction);

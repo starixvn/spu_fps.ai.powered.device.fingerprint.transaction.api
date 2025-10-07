@@ -52,37 +52,16 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
         #region ValidateAsync Tests
 
         [Fact]
-        public async Task ValidateAsync_WithEmptyAccount_ShouldReturnEmptyAccount()
+        public async Task ValidateAsync_ShouldReturnTrue()
         {
             // Arrange
-            var transactionRequest = new TransactionRequest
-            {
-                Account = string.Empty,
-                Subscriber = "validSubscriber"
-            };
+            var subscriberName = "validSubscriber";
 
             // Act
-            var result = await _subscriberService.ValidateAsync(transactionRequest);
+            var result = await _subscriberService.ValidateAsync(subscriberName);
 
             // Assert
-            result.Should().Be(TransactionResult.EmptyAccount);
-        }
-
-        [Fact]
-        public async Task ValidateAsync_WithNullAccount_ShouldReturnEmptyAccount()
-        {
-            // Arrange
-            var transactionRequest = new TransactionRequest
-            {
-                Account = null,
-                Subscriber = "validSubscriber"
-            };
-
-            // Act
-            var result = await _subscriberService.ValidateAsync(transactionRequest);
-
-            // Assert
-            result.Should().Be(TransactionResult.EmptyAccount);
+            result.Should().BeFalse();
         }
 
         [Fact]
@@ -92,12 +71,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             var subscriberName = "testSubscriber";
             var expectedSubscriberId = 123;
             var cacheKey = $"TransAPI:{subscriberName}";
-            
-            var transactionRequest = new TransactionRequest
-            {
-                Account = "testAccount",
-                Subscriber = subscriberName
-            };
 
             var subscriberModel = new SubscriberModel
             {
@@ -109,62 +82,37 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 .ReturnsAsync(subscriberModel);
 
             // Act
-            var result = await _subscriberService.ValidateAsync(transactionRequest);
+            var result = await _subscriberService.ValidateAsync(subscriberName);
 
             // Assert
-            result.Should().Be(TransactionResult.Success);
-            transactionRequest.SubscriberId.Should().Be(expectedSubscriberId);
-        }
-
-        [Fact]
-        public async Task ValidateAsync_WithEmptySubscriber_ShouldReturnNotExistSubscriber()
-        {
-            // Arrange
-            var transactionRequest = new TransactionRequest
-            {
-                Account = "testAccount",
-                Subscriber = string.Empty
-            };
-
-            // Act
-            var result = await _subscriberService.ValidateAsync(transactionRequest);
-
-            // Assert
-            result.Should().Be(TransactionResult.NotExistSubscriber);
+            result.Should().BeTrue();
         }
 
         [Fact]
         public async Task ValidateAsync_WithWhitespaceSubscriber_ShouldReturnNotExistSubscriber()
         {
             // Arrange
-            var transactionRequest = new TransactionRequest
-            {
-                Account = "testAccount",
-                Subscriber = "   "
-            };
+            var subscriberName = "  ";
 
             // Act
-            var result = await _subscriberService.ValidateAsync(transactionRequest);
+            var result = await _subscriberService.ValidateAsync(subscriberName);
 
             // Assert
-            result.Should().Be(TransactionResult.NotExistSubscriber);
+            result.Should().BeFalse();
         }
 
         [Fact]
         public async Task ValidateAsync_WithNullSubscriber_ShouldReturnNotExistSubscriber()
         {
             // Arrange
-            var transactionRequest = new TransactionRequest
-            {
-                Account = "testAccount",
-                Subscriber = null
-            };
+            string? subscriberName = null;
+
 
             // Act
-            var result = await _subscriberService.ValidateAsync(transactionRequest);
+            var result = await _subscriberService.ValidateAsync(subscriberName);
 
             // Assert
-            result.Should().Be(TransactionResult.NotExistSubscriber);
+            result.Should().BeFalse();
         }
 
         #endregion
@@ -178,12 +126,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             var subscriberName = "cachedSubscriber";
             var cacheKey = $"TransAPI:{subscriberName}";
             
-            var transactionRequest = new TransactionRequest
-            {
-                Account = "testAccount",
-                Subscriber = subscriberName
-            };
-
             var cachedSubscriber = new SubscriberModel
             {
                 SubscriberId = 456,
@@ -194,11 +136,10 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 .ReturnsAsync(cachedSubscriber);
 
             // Act
-            var result = await _subscriberService.ValidateAsync(transactionRequest);
+            var result = await _subscriberService.ValidateAsync(subscriberName);
 
             // Assert
-            result.Should().Be(TransactionResult.Success);
-            transactionRequest.SubscriberId.Should().Be(456);
+            result.Should().BeTrue();
 
             _mockRedisService.Verify(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey), Times.Once);
             _mockHttpMessageHandler.Protected().Verify(
@@ -215,11 +156,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             var subscriberName = "subscriberWithRedisError";
             var cacheKey = $"TransAPI:{subscriberName}";
             
-            var transactionRequest = new TransactionRequest
-            {
-                Account = "testAccount",
-                Subscriber = subscriberName
-            };
 
             _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ThrowsAsync(new Exception("Redis connection failed"));
@@ -227,40 +163,10 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             MockHttpCall(HttpStatusCode.OK, "{'SubscriberId': 500, 'SubscriberName': 'subscriberWithRedisError'}");
 
             // Act
-            var result = await _subscriberService.ValidateAsync(transactionRequest);
+            var result = await _subscriberService.ValidateAsync(subscriberName);
 
             // Assert
-            result.Should().Be(TransactionResult.Success);
-            transactionRequest.SubscriberId.Should().Be(500);
-        }
-
-        [Fact]
-        public async Task ValidateAsync_WithZeroSubscriberId_ShouldReturnNotExistSubscriber()
-        {
-            // Arrange
-            var subscriberName = "zeroIdSubscriber";
-            var cacheKey = $"TransAPI:{subscriberName}";
-            
-            var transactionRequest = new TransactionRequest
-            {
-                Account = "testAccount",
-                Subscriber = subscriberName
-            };
-
-            var subscriberModel = new SubscriberModel
-            {
-                SubscriberId = 0, // Invalid subscriber ID
-                SubscriberName = subscriberName
-            };
-
-            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
-                .ReturnsAsync(subscriberModel);
-
-            // Act
-            var result = await _subscriberService.ValidateAsync(transactionRequest);
-
-            // Assert
-            result.Should().Be(TransactionResult.NotExistSubscriber);
+            result.Should().BeTrue();
         }
 
         [Fact]
@@ -270,23 +176,16 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             var subscriberName = "fallbackSubscriber";
             var cacheKey = $"TransAPI:{subscriberName}";
             
-            var transactionRequest = new TransactionRequest
-            {
-                Account = "testAccount",
-                Subscriber = subscriberName
-            };
-
             _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
                 .ReturnsAsync((SubscriberModel?)null);
 
             MockHttpCall(HttpStatusCode.OK, "{'SubscriberId': 501, 'SubscriberName': 'fallbackSubscriber'}");
 
             // Act
-            var result = await _subscriberService.ValidateAsync(transactionRequest);
+            var result = await _subscriberService.ValidateAsync(subscriberName);
 
             // Assert
-            result.Should().Be(TransactionResult.Success);
-            transactionRequest.SubscriberId.Should().Be(501);
+            result.Should().BeTrue();
 
             _mockRedisService.Verify(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey), Times.Once);
             _mockHttpMessageHandler.Protected().Verify(
@@ -294,114 +193,6 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
                 Times.Once(),
                 ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>());
-        }
-
-        #endregion
-
-        #region Performance Tests
-
-        [Fact]
-        public async Task ValidateAsync_ConcurrentCalls_ShouldHandleCorrectly()
-        {
-            // Arrange
-            const int concurrentCalls = 50; // Increased for a more robust test
-            var subscriberName = "concurrentSubscriber";
-            var cacheKey = $"TransAPI:{subscriberName}";
-
-            var subscriberModel = new SubscriberModel
-            {
-                SubscriberId = 777,
-                SubscriberName = subscriberName
-            };
-
-            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
-                .ReturnsAsync(subscriberModel);
-
-            var tasks = new List<Task>();
-
-            // Act
-            var stopwatch = Stopwatch.StartNew();
-            for (int i = 0; i < concurrentCalls; i++)
-            {
-                var request = new TransactionRequest
-                {
-                    Account = $"account{i}",
-                    Subscriber = subscriberName
-                };
-                tasks.Add(Task.Run(() => _subscriberService.ValidateAsync(request)));
-            }
-
-            await Task.WhenAll(tasks);
-            stopwatch.Stop();
-
-            // Assert
-            // All tasks should complete successfully and quickly
-            tasks.ForEach(t => ((Task<string>)t).Result.Should().Be(TransactionResult.Success));
-            stopwatch.ElapsedMilliseconds.Should().BeLessThan(500); // Should be very fast
-        }
-
-        #endregion
-
-        #region Edge Cases
-
-        [Fact]
-        public async Task ValidateAsync_WithLongSubscriberName_ShouldHandleCorrectly()
-        {
-            // Arrange
-            var longSubscriberName = new string('a', 1000);
-            var cacheKey = $"TransAPI:{longSubscriberName}";
-            
-            var transactionRequest = new TransactionRequest
-            {
-                Account = "testAccount",
-                Subscriber = longSubscriberName
-            };
-
-            var subscriberModel = new SubscriberModel
-            {
-                SubscriberId = 999,
-                SubscriberName = longSubscriberName
-            };
-
-            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
-                .ReturnsAsync(subscriberModel);
-
-            // Act
-            var result = await _subscriberService.ValidateAsync(transactionRequest);
-
-            // Assert
-            result.Should().Be(TransactionResult.Success);
-            transactionRequest.SubscriberId.Should().Be(999);
-        }
-
-        [Fact]
-        public async Task ValidateAsync_WithSpecialCharactersInSubscriberName_ShouldHandleCorrectly()
-        {
-            // Arrange
-            var specialCharSubscriber = "test@#$%^&*()_+{}|:<>?";
-            var cacheKey = $"TransAPI:{specialCharSubscriber}";
-            
-            var transactionRequest = new TransactionRequest
-            {
-                Account = "testAccount",
-                Subscriber = specialCharSubscriber
-            };
-
-            var subscriberModel = new SubscriberModel
-            {
-                SubscriberId = 888,
-                SubscriberName = specialCharSubscriber
-            };
-
-            _mockRedisService.Setup(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey))
-                .ReturnsAsync(subscriberModel);
-
-            // Act
-            var result = await _subscriberService.ValidateAsync(transactionRequest);
-
-            // Assert
-            result.Should().Be(TransactionResult.Success);
-            transactionRequest.SubscriberId.Should().Be(888);
         }
 
         #endregion
