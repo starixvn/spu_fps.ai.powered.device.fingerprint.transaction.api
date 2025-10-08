@@ -164,6 +164,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 Rtc = deviceInfo.Rtc,
                 SessionKey = deviceInfo.SessionKey,
                 FPVersion = deviceInfo.FPVersion,
+                TaggingType = deviceInfo.TaggingType,
             };
         }
 

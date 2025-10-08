@@ -56,5 +56,8 @@ namespace Device.FingerPrint.Model
 
         [JsonProperty("v")]
         public string? FPVersion { get; set; }
+
+        [JsonProperty("taggingType")]
+        public int? TaggingType { get; set; }
     }
 }
