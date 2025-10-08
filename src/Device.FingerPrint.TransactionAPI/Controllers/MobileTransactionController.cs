@@ -59,8 +59,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                     await logger.InfoAsync(message.ToString());
                 }
 
-                var isValidSubscriber = await subscriberService.ValidateAsync(transaction.Subscriber);
-                if (!isValidSubscriber)
+                var subscriberId = await subscriberService.ValidateAsync(transaction.Subscriber);
+                if (subscriberId <= 0)
                 {
                     var message = new LogMessage("InsertMobileTransaction Subscriber invalid")
                         .AddMessage($"transaction {JsonConvert.SerializeObject(transaction)}");

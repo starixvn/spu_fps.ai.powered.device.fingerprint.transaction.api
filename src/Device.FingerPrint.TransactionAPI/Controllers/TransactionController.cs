@@ -43,8 +43,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         {
             try
             {
-                var isValidSubscriber = await subscriberService.ValidateAsync(request.Subscriber);
-                if (!isValidSubscriber)
+                var subscriberId = await subscriberService.ValidateAsync(request.Subscriber);
+                if (subscriberId <= 0)
                 {
                     var message = new LogMessage("InsertTransactionAPFPAsync Subscriber invalid")
                         .AddMessage($"TransRequest {JsonSerializer.Serialize(request)}");
@@ -57,6 +57,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 }
 
                 var transaction = TransformTransactionModel(request);
+
+                transaction.SubscriberId = subscriberId;
 
                 if (!transaction.IsNewFlow)
                 {

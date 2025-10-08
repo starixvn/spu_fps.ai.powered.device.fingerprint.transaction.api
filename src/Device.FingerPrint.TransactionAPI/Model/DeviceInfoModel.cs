@@ -34,6 +34,8 @@
 
         public string Version { get; set; }
 
+        public string FPVersion { get; set; }
+
         public BotDModel BotD { get; set; }
 
         public string? Tagging { get; set; }

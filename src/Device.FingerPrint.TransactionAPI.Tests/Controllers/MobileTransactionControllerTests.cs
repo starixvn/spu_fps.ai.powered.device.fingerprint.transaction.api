@@ -68,7 +68,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
 
             // Setup default successful subscriber validation
             _mockSubscriberService.Setup(x => x.ValidateAsync(It.IsAny<string>()))
-                .ReturnsAsync(true);
+                .ReturnsAsync(1);
 
             // Assign mocked HttpContext to controller
             _controller.ControllerContext = new ControllerContext
@@ -126,7 +126,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             var request = new MobileTransactionRequest { Transaction = ObjectToBase64(mobileTransaction) };
 
             _mockSubscriberService.Setup(x => x.ValidateAsync(It.IsAny<string>()))
-                .ReturnsAsync(false);
+                .ReturnsAsync(-1);
 
             // Act
             var result = await _controller.InsertTransactionAsync(request);

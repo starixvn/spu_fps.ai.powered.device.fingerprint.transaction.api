@@ -61,7 +61,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             var result = await _subscriberService.ValidateAsync(subscriberName);
 
             // Assert
-            result.Should().BeFalse();
+            result.Should().Be(-1);
         }
 
         [Fact]
@@ -85,7 +85,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             var result = await _subscriberService.ValidateAsync(subscriberName);
 
             // Assert
-            result.Should().BeTrue();
+            result.Should().NotBe(-1);
         }
 
         [Fact]
@@ -98,7 +98,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             var result = await _subscriberService.ValidateAsync(subscriberName);
 
             // Assert
-            result.Should().BeFalse();
+            result.Should().Be(-1);
         }
 
         [Fact]
@@ -112,7 +112,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             var result = await _subscriberService.ValidateAsync(subscriberName);
 
             // Assert
-            result.Should().BeFalse();
+            result.Should().Be(-1);
         }
 
         #endregion
@@ -139,7 +139,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             var result = await _subscriberService.ValidateAsync(subscriberName);
 
             // Assert
-            result.Should().BeTrue();
+            result.Should().NotBe(-1);
 
             _mockRedisService.Verify(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey), Times.Once);
             _mockHttpMessageHandler.Protected().Verify(
@@ -166,7 +166,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             var result = await _subscriberService.ValidateAsync(subscriberName);
 
             // Assert
-            result.Should().BeTrue();
+            result.Should().NotBe(-1);
         }
 
         [Fact]
@@ -185,7 +185,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             var result = await _subscriberService.ValidateAsync(subscriberName);
 
             // Assert
-            result.Should().BeTrue();
+            result.Should().NotBe(-1);
 
             _mockRedisService.Verify(x => x.GetAsync<SubscriberModel>(It.IsAny<IDatabase>(), cacheKey), Times.Once);
             _mockHttpMessageHandler.Protected().Verify(

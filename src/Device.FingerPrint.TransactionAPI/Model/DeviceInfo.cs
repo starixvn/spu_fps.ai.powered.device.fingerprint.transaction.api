@@ -51,7 +51,10 @@ namespace Device.FingerPrint.Model
         [JsonProperty("sk")]
         public string? SessionKey { get; set; }
 
+        [JsonProperty("sv")]
+        public string? ScriptVersion { get; set; }
+
         [JsonProperty("v")]
-        public string? NewVersion { get; set; }
+        public string? FPVersion { get; set; }
     }
 }

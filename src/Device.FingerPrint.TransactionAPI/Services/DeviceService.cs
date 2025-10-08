@@ -136,7 +136,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             return new DeviceInfoModel
             {
                 AppVersion = deviceInfo.AppVersion,
-                Version = string.IsNullOrEmpty(deviceInfo.Version) ? deviceInfo.NewVersion : deviceInfo.Version,
+                Version = string.IsNullOrEmpty(deviceInfo.Version) ? deviceInfo.ScriptVersion : deviceInfo.Version,
                 CapturedDate = deviceInfo.CapturedDate ?? DateTimeOffset.Now.Ticks,
                 DeviceFPCode = deviceInfo.DeviceCode,
                 DeviceNo = deviceInfo.DeviceId,
@@ -163,6 +163,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 F5 = deviceInfo.F5,
                 Rtc = deviceInfo.Rtc,
                 SessionKey = deviceInfo.SessionKey,
+                FPVersion = deviceInfo.FPVersion,
             };
         }
 
