@@ -32,7 +32,7 @@ namespace Device.FingerPrint.Model
         public long? CapturedDate { get; set; }
 
         [JsonProperty("version")]
-        public string Version { get; set; }
+        public string? Version { get; set; }
 
         public BotD BotD { get; set; }
 
