@@ -1,41 +1,41 @@
-﻿using Device.FingerPrint.Model;
+﻿using System.Globalization;
+using System.Text.Json;
+using Device.FingerPrint.Model;
 using Device.FingerPrint.TransactionAPI.Queue;
 using Device.FingerPrint.TransactionAPI.Services;
+using Fanex.Logging.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using ONEbook.UM.Models;
-using ONEbook.UM.Services;
-using System.Globalization;
 
 namespace Device.FingerPrint.TransactionAPI.Controllers
 {
     [ApiController]
     public class TransactionController : ControllerBase
     {
-        private readonly IMaintenanceService maintenanceService;
         private readonly ILogger logger;
         private readonly ITransactionService transactionService;
         private readonly IDeviceService deviceService;
         private readonly IMassTransitProducer massTransitProducer;
         private readonly IAppSettings appSettings;
         private readonly IExpiredTransactionService expiredTransactionService;
+        private readonly ISubscriberService subscriberService;
 
         public TransactionController(
-            IMaintenanceService maintenanceService,
             ILogger logger,
             ITransactionService transactionService,
             IDeviceService deviceService,
             IMassTransitProducer massTransitProducer,
             IAppSettings appSettings,
-            IExpiredTransactionService expiredTransactionService
+            IExpiredTransactionService expiredTransactionService,
+            ISubscriberService subscriberService
             )
         {
-            this.maintenanceService = maintenanceService;
             this.logger = logger;
             this.transactionService = transactionService;
             this.deviceService = deviceService;
             this.massTransitProducer = massTransitProducer;
             this.appSettings = appSettings;
             this.expiredTransactionService = expiredTransactionService;
+            this.subscriberService = subscriberService;
         }
 
         [HttpPost("FPS/InsertTransaction")]
@@ -43,6 +43,19 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         {
             try
             {
+                var isValidSubscriber = await subscriberService.ValidateAsync(request.Subscriber);
+                if (!isValidSubscriber)
+                {
+                    var message = new LogMessage("InsertTransactionAPFPAsync Subscriber invalid")
+                        .AddMessage($"TransRequest {JsonSerializer.Serialize(request)}");
+                    await logger.ErrorAsync(message.ToString());
+
+                    return Ok(new
+                    {
+                        StatusCode = System.Net.HttpStatusCode.BadRequest
+                    });
+                }
+
                 var transaction = TransformTransactionModel(request);
 
                 if (!transaction.IsNewFlow)
@@ -52,10 +65,11 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                     return Ok();
                 }
 
-                var sessionKey = transaction?.DeviceInfo?.SessionKey ?? request.SessionKey;
-                if (string.IsNullOrEmpty(sessionKey))
+                if (string.IsNullOrEmpty(transaction.SessionKey))
                 {
-                    return BadRequest("SessionKey is required");
+                    await PushToQueueAsync(transaction);
+
+                    return Ok();
                 }
 
                 await transactionService.InsertTransaction(transaction);
@@ -82,13 +96,6 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 await logger.ErrorAsync("Error in Scan Expired Transaction", ex);
                 return false;
             }
-        }
-
-        [HttpGet]
-        [Route("FPS/TestUM")]
-        public UnderMaintenanceTime TestUM()
-        {
-            return maintenanceService.GetUnderMaintenanceTime();
         }
 
         private TransactionModel TransformTransactionModel(TransactionRequest request)
@@ -138,8 +145,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 SubscriberId = request.SubscriberId,
                 LoginTime = request.LoginTime,
                 CaptchaResult = request.CaptchaResult,
-                SessionKey = request.SessionKey,
-                TransDate = request.TransDate,
+                SessionKey = deviceInfo?.SessionKey ?? request.SessionKey,
+                TransDate = DateTimeOffset.Now.DateTime,
                 IsNewFlow = isNewFlow,
                 DeviceInfo = deviceInfo,
                 Device = deviceModel
