@@ -409,6 +409,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests
             _configurationData["JWT:Password"] = "testpassword";
             _configurationData["JWT:Enable"] = "true";
             _configurationData["Redis:Database"] = "14";
+            _configurationData["EnableMBDebugLogging"] = "false";
         }
 
         #endregion

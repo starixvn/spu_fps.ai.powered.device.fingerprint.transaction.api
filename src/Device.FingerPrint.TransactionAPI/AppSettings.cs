@@ -16,6 +16,7 @@ namespace Device.FingerPrint.TransactionAPI
         string JWTPassword { get; }
         bool JWTEnable { get; }
         RedisSettings RedisSettings { get; }
+        bool EnableMBDebugLogging { get; }
     }
 
     public class AppSettings : IAppSettings
@@ -36,7 +37,8 @@ namespace Device.FingerPrint.TransactionAPI
             FPJSPortialAPI = GetValue<string>("FPJS-Portial-API");
             JWTPassword = GetValue<string>("JWT:Password");
             JWTEnable = GetValue<bool>("JWT:Enable");
-            RedisSettings = GetSection<RedisSettings>("Redis");
+            RedisSettings = GetSection<RedisSettings>("Redis"); 
+            EnableMBDebugLogging = GetValue<bool>("EnableMBDebugLogging");
         }
 
         public string Environment { get; }
@@ -50,6 +52,7 @@ namespace Device.FingerPrint.TransactionAPI
         public string JWTPassword { get; }
         public bool JWTEnable { get; }
         public RedisSettings RedisSettings { get; }
+        public bool EnableMBDebugLogging { get; }
 
         public T GetValue<T>(string key)
         {
