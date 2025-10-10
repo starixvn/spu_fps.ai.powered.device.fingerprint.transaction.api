@@ -3,6 +3,8 @@
     [Serializable]
     public class MessageQueue
     {
+        public Guid CorrelationID { get; set; } = Guid.NewGuid();
+
         public string? Account { get; set; }
 
         public string? Action { get; set; }
