@@ -60,26 +60,16 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         private DeviceInfoModel TransformDeviceInfo(DeviceInfo deviceInfo)
         {
-            var botD = new BotDModel();
-            try
+            var version = TransformVersion(deviceInfo);
+            var isNewFlow = false;
+
+            if (!string.IsNullOrEmpty(version))
             {
-                if (deviceInfo.BotD?.Result != null)
+                var majorVersion = version.Split('.').FirstOrDefault();
+                if (int.TryParse(majorVersion, out int ver) && ver >= 3)
                 {
-                    botD = new BotDModel
-                    {
-                        Result = new BotDResultModel
-                        {
-                            Bot = deviceInfo.BotD.Result.Bot,
-                            BotKind = deviceInfo.BotD.Result.BotKind
-                        },
-                        Detection = deviceInfo.BotD.Detection,
-                        Component = deviceInfo.BotD.Component
-                    };
+                    isNewFlow = true;
                 }
-            }
-            catch (Exception ex)
-            {
-                LogService.Error("Consumer TransformDeviceInfo: " + ex.Message + "\n" + JsonConvert.SerializeObject(deviceInfo));
             }
 
             return new DeviceInfoModel
@@ -105,7 +95,6 @@ namespace Device.FingerPrint.TransactionAPI.Services
                             Height = deviceInfo.Screen.Height,
                             Width = deviceInfo.Screen.Width
                         },
-                BotD = botD,
                 Tagging = deviceInfo.Tagging,
                 F4 = deviceInfo.F4,
                 F5 = deviceInfo.F5,
@@ -113,7 +102,8 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 SessionKey = deviceInfo.SessionKey,
                 FPVersion = deviceInfo.FPVersion,
                 TaggingType = deviceInfo.TaggingType,
-                Version = TransformVersion(deviceInfo)
+                Version = version,
+                IsNewFlow = isNewFlow
             };
         }
 

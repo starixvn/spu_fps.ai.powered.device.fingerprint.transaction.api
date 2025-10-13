@@ -49,5 +49,7 @@
         public string? SessionKey { get; set; }
 
         public int? TaggingType { get; set; }
+
+        public bool IsNewFlow { get; set; }
     }
 }

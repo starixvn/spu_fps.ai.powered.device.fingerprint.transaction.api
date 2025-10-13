@@ -74,7 +74,16 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                     return Ok();
                 }
 
-                await transactionService.InsertTransaction(transaction);
+                try
+                {
+                    await transactionService.InsertTransaction(transaction);
+                }
+                catch (Exception ex)
+                {
+                    // In case of redis down or db down, we still push to queue for later processing
+                    await logger.ErrorAsync("Error InsertTransaction on new flow", ex);
+                    await PushToQueueAsync(transaction);
+                }
 
                 return Ok();
             }
@@ -113,16 +122,6 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 deviceInfo.BotD = deviceService.TransformBotdModel(request.Bi);
             }
 
-            var isNewFlow = false;
-            if (deviceInfo is not null && !string.IsNullOrEmpty(deviceInfo.Version))
-            {
-                var majorVersion = deviceInfo.Version.Split('.').FirstOrDefault();
-                if (int.TryParse(majorVersion, out int ver) && ver >= 3)
-                {
-                    isNewFlow = true;
-                }
-            }
-
             var deviceModel = TransformDeviceModel(request);
 
             return new TransactionModel
@@ -147,7 +146,7 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 CaptchaResult = request.CaptchaResult,
                 SessionKey = deviceInfo?.SessionKey ?? request.SessionKey,
                 TransDate = DateTimeOffset.Now.DateTime,
-                IsNewFlow = isNewFlow,
+                IsNewFlow = deviceInfo?.IsNewFlow ?? false,
                 DeviceInfo = deviceInfo,
                 Device = deviceModel,
                 OcelotRequestId = GetOcelotRequestId(),
