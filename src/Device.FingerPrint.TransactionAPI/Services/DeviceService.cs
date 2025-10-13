@@ -60,7 +60,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         private DeviceInfoModel TransformDeviceInfo(DeviceInfo deviceInfo)
         {
-            var version = TransformVersion(deviceInfo);
+            var version = TransformActivatorVersion(deviceInfo);
             var isNewFlow = false;
 
             if (!string.IsNullOrEmpty(version))
@@ -100,14 +100,14 @@ namespace Device.FingerPrint.TransactionAPI.Services
                 F5 = deviceInfo.F5,
                 Rtc = deviceInfo.Rtc,
                 SessionKey = deviceInfo.SessionKey,
-                FPVersion = deviceInfo.FPVersion,
+                FPVersion = isNewFlow ? TransformVersion(deviceInfo.FPVersion) : null,
                 TaggingType = deviceInfo.TaggingType,
                 Version = version,
                 IsNewFlow = isNewFlow
             };
         }
 
-        private string TransformVersion(DeviceInfo deviceInfo)
+        private string TransformActivatorVersion(DeviceInfo deviceInfo)
         {
             if(deviceInfo.Version is null && deviceInfo.ScriptVersion is null)
             {
@@ -115,6 +115,26 @@ namespace Device.FingerPrint.TransactionAPI.Services
             }
 
             var version = deviceInfo.Version ?? deviceInfo.ScriptVersion;
+
+            if(version == string.Empty)
+            {
+                return "-2";
+            }
+
+            if (version.Length > MaxVersionLength)
+            {
+                return "-3";
+            }
+
+            return version;
+        }
+
+        private string TransformVersion(string? version)
+        {
+            if(version is null)
+            {
+                return "-1";
+            }
 
             if(version == string.Empty)
             {
