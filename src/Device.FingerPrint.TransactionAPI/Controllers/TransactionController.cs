@@ -105,10 +105,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             var di = request.Di ?? request.__di;
 
             var deviceInfo = deviceService.GetDeviceInfo(di);
-            if (string.IsNullOrEmpty(deviceInfo.UserAgent))
-            {
-                deviceInfo.UserAgent = request.UserAgent;
-            }
+
+            deviceInfo.UserAgent = string.IsNullOrEmpty(deviceInfo.UserAgent) ? request.UserAgent : deviceInfo.UserAgent;
 
             if (!string.IsNullOrEmpty(request.Bi))
             {
@@ -151,8 +149,19 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 TransDate = DateTimeOffset.Now.DateTime,
                 IsNewFlow = isNewFlow,
                 DeviceInfo = deviceInfo,
-                Device = deviceModel
+                Device = deviceModel,
+                OcelotRequestId = GetOcelotRequestId(),
             };
+        }
+
+        private string GetOcelotRequestId()
+        {
+            if (Request is not null)
+            {
+                Request.Headers.TryGetValue("OcRequestId", out var ocelotRequestIdValue);
+                return ocelotRequestIdValue.FirstOrDefault() ?? string.Empty;
+            }
+            return string.Empty;
         }
 
         private DeviceModel TransformDeviceModel(TransactionRequest transRequest)
@@ -175,6 +184,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         {
             var dataEvent = new MessageQueue
             {
+                OcelotRequestId = transaction.OcelotRequestId,
+                CorrelationID = transaction.Guid,
                 Account = transaction.Account,
                 Device = transaction.Device,
                 Action = transaction.Action,

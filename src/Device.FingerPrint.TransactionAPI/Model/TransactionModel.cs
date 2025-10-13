@@ -50,6 +50,8 @@
 
         public DeviceInfoModel? DeviceInfo { get; set; }
 
-        public Guid Guid { get; set; }
+        public Guid Guid { get; set; } = Guid.NewGuid();
+
+        public string? OcelotRequestId { get; set; }
     }
 }

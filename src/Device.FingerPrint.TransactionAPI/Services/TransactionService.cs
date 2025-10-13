@@ -33,7 +33,6 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
             if(!pushedToQueue)
             {
-                transaction.Guid = Guid.NewGuid();
                 var transactionJson = JsonSerializer.Serialize(transaction);
                 await _redisService.TransactionDatabase.HashSetAsync(transaction.SessionKey, transaction.Guid.ToString(), transactionJson);
 

@@ -114,6 +114,8 @@ namespace Device.FingerPrint.TransactionAPI.Services
         {
             var message = new MessageQueue
             {
+                OcelotRequestId = transaction.OcelotRequestId,
+                CorrelationID = transaction.Guid,
                 Account = transaction.Account,
                 Device = transaction.Device,
                 Action = transaction.Action,

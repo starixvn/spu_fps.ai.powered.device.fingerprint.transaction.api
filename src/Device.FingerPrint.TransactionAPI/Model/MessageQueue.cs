@@ -3,7 +3,9 @@
     [Serializable]
     public class MessageQueue
     {
-        public Guid CorrelationID { get; set; } = Guid.NewGuid();
+        public string? OcelotRequestId { get; set; }
+
+        public Guid CorrelationID { get; set; }
 
         public string? Account { get; set; }
 
