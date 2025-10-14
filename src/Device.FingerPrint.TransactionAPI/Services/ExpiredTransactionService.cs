@@ -60,7 +60,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
                     continue;
                 }
 
-                if(await _linkingService.LinkingOnInsert(transaction))
+                if(await _linkingService.LinkingOnInsert(transaction, "ExpiredTransaction"))
                 {
                     await _redisService.TransactionDatabase.HashDeleteAsync(sessionKey, guid, CommandFlags.FireAndForget);
                 }

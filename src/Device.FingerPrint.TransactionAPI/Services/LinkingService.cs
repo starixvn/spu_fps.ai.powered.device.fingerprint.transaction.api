@@ -9,7 +9,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
     {
         Task<bool> LinkingOnInsert(string sessionKey);
 
-        Task<bool> LinkingOnInsert(TransactionModel transaction, bool requiredFullDetails = false);
+        Task<bool> LinkingOnInsert(TransactionModel transaction, string linkedBy, bool requiredFullDetails = false);
     }
 
     public class LinkingService : ILinkingService
@@ -50,7 +50,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
                     continue;
                 }
 
-                if (await LinkingOnInsert(transaction, requiredFullDetails: true))
+                if (await LinkingOnInsert(transaction, "Fingerprint", requiredFullDetails: true))
                 {
                     await _redisService.TransactionDatabase.HashDeleteAsync(transaction.SessionKey, value.Name, CommandFlags.FireAndForget);
                     var key = $"{transaction.SessionKey}:{transaction.Guid}";
@@ -60,7 +60,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
             return true;
         }
 
-        public async Task<bool> LinkingOnInsert(TransactionModel transaction, bool requiredFullDetails = false)
+        public async Task<bool> LinkingOnInsert(TransactionModel transaction, string linkedBy, bool requiredFullDetails = false)
         {
             APFingerprintModel? fingerprint4 = null;
             APFingerprintModel? fingerprint5 = null;
@@ -84,6 +84,8 @@ namespace Device.FingerPrint.TransactionAPI.Services
             }
 
             var messageQueue = BuildMessageQueue(transaction, fingerprint4, fingerprint5);
+            messageQueue.LinkedBy = linkedBy;
+
             await _massTransitProducer.SendAsync(messageQueue, _appSettings.QueueName);
 
             return true;

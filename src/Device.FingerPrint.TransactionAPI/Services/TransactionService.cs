@@ -29,7 +29,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         public async Task InsertTransaction(TransactionModel transaction)
         {
-            var pushedToQueue = await _linkingService.LinkingOnInsert(transaction, true);
+            var pushedToQueue = await _linkingService.LinkingOnInsert(transaction, "Transaction", true);
 
             if(!pushedToQueue)
             {
