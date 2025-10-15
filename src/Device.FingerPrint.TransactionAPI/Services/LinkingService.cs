@@ -44,7 +44,14 @@ namespace Device.FingerPrint.TransactionAPI.Services
                     continue;
                 }
 
-                var transaction = JsonSerializer.Deserialize<TransactionModel>(value.Value);
+                var transactionJson = await _redisService.TransactionDatabase.HashGetAsync(sessionKey, value.Name);
+                await _redisService.TransactionDatabase.HashDeleteAsync(sessionKey, value.Name, CommandFlags.FireAndForget);
+                if(transactionJson.IsNullOrEmpty)
+                {
+                    continue;
+                }
+
+                var transaction = JsonSerializer.Deserialize<TransactionModel>(transactionJson);
                 if (transaction == null)
                 {
                     continue;
@@ -52,9 +59,13 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
                 if (await LinkingOnInsert(transaction, "Fingerprint", requiredFullDetails: true))
                 {
-                    await _redisService.TransactionDatabase.HashDeleteAsync(transaction.SessionKey, value.Name, CommandFlags.FireAndForget);
                     var key = $"{transaction.SessionKey}:{transaction.Guid}";
                     await _redisService.ShadowDatabase.SortedSetRemoveAsync(_appSettings.RedisSettings.ExpiredTransactionHashKey, key, CommandFlags.FireAndForget);
+                }
+                else
+                {
+                    var transactionJsonString = JsonSerializer.Serialize(transaction);
+                    await _redisService.TransactionDatabase.HashSetAsync(sessionKey, value.Name, transactionJsonString);
                 }
             }
             return true;
