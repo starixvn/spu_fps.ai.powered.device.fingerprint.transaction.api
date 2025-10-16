@@ -34,6 +34,8 @@
 
         public string Version { get; set; }
 
+        public string? FPVersion { get; set; }
+
         public BotDModel BotD { get; set; }
 
         public string? Tagging { get; set; }
@@ -45,5 +47,9 @@
         public string? Rtc { get; set; }
 
         public string? SessionKey { get; set; }
+
+        public int? TaggingType { get; set; }
+
+        public bool IsNewFlow { get; set; }
     }
 }

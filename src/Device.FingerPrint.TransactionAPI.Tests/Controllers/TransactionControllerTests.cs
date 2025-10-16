@@ -33,7 +33,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Controllers
             _mockSubscriberService = new Mock<ISubscriberService>();
 
             _mockSubscriberService.Setup(s => s.ValidateAsync(It.IsAny<string>()))
-                .ReturnsAsync(true);
+                .ReturnsAsync(1);
 
             _controller = new TransactionController(
                 _mockLogger.Object,

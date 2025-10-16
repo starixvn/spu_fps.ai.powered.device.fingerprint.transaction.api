@@ -9,7 +9,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
     {
         Task<bool> LinkingOnInsert(string sessionKey);
 
-        Task<bool> LinkingOnInsert(TransactionModel transaction, bool requiredFullDetails = false);
+        Task<bool> LinkingOnInsert(TransactionModel transaction, string linkedBy, bool requiredFullDetails = false);
     }
 
     public class LinkingService : ILinkingService
@@ -44,23 +44,34 @@ namespace Device.FingerPrint.TransactionAPI.Services
                     continue;
                 }
 
-                var transaction = JsonSerializer.Deserialize<TransactionModel>(value.Value);
+                var transactionJson = await _redisService.TransactionDatabase.HashGetAsync(sessionKey, value.Name);
+                await _redisService.TransactionDatabase.HashDeleteAsync(sessionKey, value.Name, CommandFlags.FireAndForget);
+                if(transactionJson.IsNullOrEmpty)
+                {
+                    continue;
+                }
+
+                var transaction = JsonSerializer.Deserialize<TransactionModel>(transactionJson);
                 if (transaction == null)
                 {
                     continue;
                 }
 
-                if (await LinkingOnInsert(transaction, requiredFullDetails: true))
+                if (await LinkingOnInsert(transaction, "Fingerprint", requiredFullDetails: true))
                 {
-                    await _redisService.TransactionDatabase.HashDeleteAsync(transaction.SessionKey, value.Name, CommandFlags.FireAndForget);
                     var key = $"{transaction.SessionKey}:{transaction.Guid}";
                     await _redisService.ShadowDatabase.SortedSetRemoveAsync(_appSettings.RedisSettings.ExpiredTransactionHashKey, key, CommandFlags.FireAndForget);
+                }
+                else
+                {
+                    var transactionJsonString = JsonSerializer.Serialize(transaction);
+                    await _redisService.TransactionDatabase.HashSetAsync(sessionKey, value.Name, transactionJsonString);
                 }
             }
             return true;
         }
 
-        public async Task<bool> LinkingOnInsert(TransactionModel transaction, bool requiredFullDetails = false)
+        public async Task<bool> LinkingOnInsert(TransactionModel transaction, string linkedBy, bool requiredFullDetails = false)
         {
             APFingerprintModel? fingerprint4 = null;
             APFingerprintModel? fingerprint5 = null;
@@ -84,6 +95,8 @@ namespace Device.FingerPrint.TransactionAPI.Services
             }
 
             var messageQueue = BuildMessageQueue(transaction, fingerprint4, fingerprint5);
+            messageQueue.LinkedBy = linkedBy;
+
             await _massTransitProducer.SendAsync(messageQueue, _appSettings.QueueName);
 
             return true;
@@ -114,6 +127,8 @@ namespace Device.FingerPrint.TransactionAPI.Services
         {
             var message = new MessageQueue
             {
+                OcelotRequestId = transaction.OcelotRequestId,
+                CorrelationID = transaction.Guid,
                 Account = transaction.Account,
                 Device = transaction.Device,
                 Action = transaction.Action,

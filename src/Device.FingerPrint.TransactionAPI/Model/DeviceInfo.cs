@@ -20,7 +20,7 @@ namespace Device.FingerPrint.Model
         public string UserAgent { get; set; }
 
         [JsonProperty("screen")]
-        public DeviceScreen Screen { get; set; }
+        public ScreenInfoModel Screen { get; set; }
 
         [JsonProperty("deviceId")]
         public string DeviceId { get; set; }
@@ -32,9 +32,7 @@ namespace Device.FingerPrint.Model
         public long? CapturedDate { get; set; }
 
         [JsonProperty("version")]
-        public string Version { get; set; }
-
-        public BotD BotD { get; set; }
+        public string? Version { get; set; }
 
         [JsonProperty("tag")]
         public string? Tagging { get; set; }
@@ -52,6 +50,12 @@ namespace Device.FingerPrint.Model
         public string? SessionKey { get; set; }
 
         [JsonProperty("v")]
-        public string? NewVersion { get; set; }
+        public string? ScriptVersion { get; set; }
+
+        [JsonProperty("fv")]
+        public string? FPVersion { get; set; }
+
+        [JsonProperty("taggingType")]
+        public int? TaggingType { get; set; }
     }
 }

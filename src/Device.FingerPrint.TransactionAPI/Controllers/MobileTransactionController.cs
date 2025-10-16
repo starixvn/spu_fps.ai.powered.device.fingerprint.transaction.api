@@ -51,16 +51,16 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                     return BadRequest();
                 }
 
-                if (!string.IsNullOrEmpty(transaction.Exceptions))
+                if (appSettings.EnableMBDebugLogging && !string.IsNullOrEmpty(transaction.Exceptions))
                 {
                     var message = new LogMessage("Mobile App SDK Occurs Exception")
-                        .AddMessage($"request {JsonConvert.SerializeObject(request)}");
+                        .AddMessage($"request {transactionJson}");
 
                     await logger.InfoAsync(message.ToString());
                 }
 
-                var isValidSubscriber = await subscriberService.ValidateAsync(transaction.Subscriber);
-                if (!isValidSubscriber)
+                var subscriberId = await subscriberService.ValidateAsync(transaction.Subscriber);
+                if (subscriberId <= 0)
                 {
                     var message = new LogMessage("InsertMobileTransaction Subscriber invalid")
                         .AddMessage($"transaction {JsonConvert.SerializeObject(transaction)}");

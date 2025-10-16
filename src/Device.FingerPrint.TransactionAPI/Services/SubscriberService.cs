@@ -5,7 +5,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 {
     public interface ISubscriberService
     {
-        Task<bool> ValidateAsync(string subscriber);
+        Task<int> ValidateAsync(string subscriber);
     }
 
     public class SubscriberService(IAppSettings appSettings, IRedisMultiplexDbService redisMultiplexDbService, HttpClient httpClient, ILogger logger) : ISubscriberService
@@ -15,7 +15,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
         private readonly HttpClient _httpClient = httpClient;
         private readonly ILogger _logger = logger;
 
-        public async Task<bool> ValidateAsync(string subscriber)
+        public async Task<int> ValidateAsync(string subscriber)
         {
             if (!string.IsNullOrWhiteSpace(subscriber))
             {
@@ -23,11 +23,11 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
                 if (subscriberInfo != null && subscriberInfo.SubscriberId != 0)
                 {
-                    return true;
+                    return subscriberInfo.SubscriberId;
                 }
             }
 
-            return false;
+            return -1;
         }
 
         private async Task<SubscriberModel> GetSubscriberInfoAsync(string subName)

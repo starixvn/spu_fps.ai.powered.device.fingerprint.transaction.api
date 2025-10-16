@@ -43,8 +43,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         {
             try
             {
-                var isValidSubscriber = await subscriberService.ValidateAsync(request.Subscriber);
-                if (!isValidSubscriber)
+                var subscriberId = await subscriberService.ValidateAsync(request.Subscriber);
+                if (subscriberId <= 0)
                 {
                     var message = new LogMessage("InsertTransactionAPFPAsync Subscriber invalid")
                         .AddMessage($"TransRequest {JsonSerializer.Serialize(request)}");
@@ -57,6 +57,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 }
 
                 var transaction = TransformTransactionModel(request);
+
+                transaction.SubscriberId = subscriberId;
 
                 if (!transaction.IsNewFlow)
                 {
@@ -72,7 +74,16 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                     return Ok();
                 }
 
-                await transactionService.InsertTransaction(transaction);
+                try
+                {
+                    await transactionService.InsertTransaction(transaction);
+                }
+                catch (Exception ex)
+                {
+                    // In case of redis down or db down, we still push to queue for later processing
+                    await logger.ErrorAsync("Error InsertTransaction on new flow", ex);
+                    await PushToQueueAsync(transaction);
+                }
 
                 return Ok();
             }
@@ -103,24 +114,12 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
             var di = request.Di ?? request.__di;
 
             var deviceInfo = deviceService.GetDeviceInfo(di);
-            if (string.IsNullOrEmpty(deviceInfo.UserAgent))
-            {
-                deviceInfo.UserAgent = request.UserAgent;
-            }
+
+            deviceInfo.UserAgent = string.IsNullOrEmpty(deviceInfo.UserAgent) ? request.UserAgent : deviceInfo.UserAgent;
 
             if (!string.IsNullOrEmpty(request.Bi))
             {
                 deviceInfo.BotD = deviceService.TransformBotdModel(request.Bi);
-            }
-
-            var isNewFlow = false;
-            if (deviceInfo is not null && !string.IsNullOrEmpty(deviceInfo.Version))
-            {
-                var majorVersion = deviceInfo.Version.Split('.').FirstOrDefault();
-                if (int.TryParse(majorVersion, out int ver) && ver >= 3)
-                {
-                    isNewFlow = true;
-                }
             }
 
             var deviceModel = TransformDeviceModel(request);
@@ -147,10 +146,21 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
                 CaptchaResult = request.CaptchaResult,
                 SessionKey = deviceInfo?.SessionKey ?? request.SessionKey,
                 TransDate = DateTimeOffset.Now.DateTime,
-                IsNewFlow = isNewFlow,
+                IsNewFlow = deviceInfo?.IsNewFlow ?? false,
                 DeviceInfo = deviceInfo,
-                Device = deviceModel
+                Device = deviceModel,
+                OcelotRequestId = GetOcelotRequestId(),
             };
+        }
+
+        private string GetOcelotRequestId()
+        {
+            if (Request is not null)
+            {
+                Request.Headers.TryGetValue("OcRequestId", out var ocelotRequestIdValue);
+                return ocelotRequestIdValue.FirstOrDefault() ?? string.Empty;
+            }
+            return string.Empty;
         }
 
         private DeviceModel TransformDeviceModel(TransactionRequest transRequest)
@@ -173,6 +183,8 @@ namespace Device.FingerPrint.TransactionAPI.Controllers
         {
             var dataEvent = new MessageQueue
             {
+                OcelotRequestId = transaction.OcelotRequestId,
+                CorrelationID = transaction.Guid,
                 Account = transaction.Account,
                 Device = transaction.Device,
                 Action = transaction.Action,

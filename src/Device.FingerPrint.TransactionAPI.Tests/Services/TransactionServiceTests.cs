@@ -41,7 +41,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             // Arrange
             var transaction = new TransactionModel();
             _mockLinkingService
-                .Setup(s => s.LinkingOnInsert(transaction, true))
+                .Setup(s => s.LinkingOnInsert(transaction, It.IsAny<string>(), true))
                 .ReturnsAsync(true);
 
             // Act
@@ -63,7 +63,7 @@ namespace Device.FingerPrint.TransactionAPI.Tests.Services
             };
 
             _mockLinkingService
-                .Setup(s => s.LinkingOnInsert(transaction, true))
+                .Setup(s => s.LinkingOnInsert(transaction, It.IsAny<string>(), true))
                 .ReturnsAsync(false);
 
             // Act

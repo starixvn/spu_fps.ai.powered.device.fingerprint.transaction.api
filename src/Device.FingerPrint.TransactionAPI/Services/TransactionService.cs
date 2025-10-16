@@ -29,11 +29,10 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         public async Task InsertTransaction(TransactionModel transaction)
         {
-            var pushedToQueue = await _linkingService.LinkingOnInsert(transaction, true);
+            var pushedToQueue = await _linkingService.LinkingOnInsert(transaction, "Transaction", true);
 
             if(!pushedToQueue)
             {
-                transaction.Guid = Guid.NewGuid();
                 var transactionJson = JsonSerializer.Serialize(transaction);
                 await _redisService.TransactionDatabase.HashSetAsync(transaction.SessionKey, transaction.Guid.ToString(), transactionJson);
 

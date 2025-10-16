@@ -3,6 +3,12 @@
     [Serializable]
     public class MessageQueue
     {
+        public string? OcelotRequestId { get; set; }
+
+        public Guid CorrelationID { get; set; }
+
+        public string? LinkedBy { get; set; }
+
         public string? Account { get; set; }
 
         public string? Action { get; set; }
