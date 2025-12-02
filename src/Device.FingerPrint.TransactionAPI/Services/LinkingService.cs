@@ -30,6 +30,7 @@ namespace Device.FingerPrint.TransactionAPI.Services
 
         public async Task<bool> LinkingOnInsert(string sessionKey)
         {
+            // Add some commits
             var transactionsRedisValue = await _redisService.TransactionDatabase.HashGetAllAsync(sessionKey);
 
             if (!transactionsRedisValue.Any())
